@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "todo-chatbot.fullname" . }}-ingress
+  labels:
+    {{- include "todo-chatbot.labels" . | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: todo-app.local
+      http:
+        paths:
+          # Frontend routes
+          - path: /()(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ include "todo-chatbot.fullname" . }}-frontend
+                port:
+                  number: {{ .Values.frontend.service.port }}
+          # Backend API routes
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ include "todo-chatbot.fullname" . }}-backend
+                port:
+                  number: {{ .Values.backend.service.port }}

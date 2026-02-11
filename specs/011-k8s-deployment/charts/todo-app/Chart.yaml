@@ -1,0 +1,154 @@
+# Chart Details
+apiVersion: v2
+name: todo-app
+version: 1.0.0
+description: A Helm chart for Todo AI Chatbot application
+appVersion: 1.0.0
+
+# Chart type
+type: application
+
+# Keywords for searchability
+keywords:
+  - todo
+  - chatbot
+  - ai
+  - kubernetes
+  - helm
+
+# Home page and sources
+home: https://github.com/todo-chatbot
+sources:
+  - https://github.com/todo-chatbot/todo-app
+
+# Maintainers
+maintainers:
+  - name: Todo AI Chatbot Team
+    email: team@todo-chatbot.com
+    url: https://todo-chatbot.com
+
+# Icon for the chart
+icon: https://via.placeholder.com/200x200.png?text=Todo+Chatbot
+
+# Dependencies
+dependencies:
+  - name: ingress-nginx
+    version: "4.8.3"
+    repository: "https://kubernetes.github.io/ingress-nginx"
+    condition: ingress.enabled
+
+# Annotations
+annotations:
+  category: Application
+  app.kubernetes.io/name: todo-app
+  app.kubernetes.io/instance: todo-app
+  app.kubernetes.io/version: 1.0.0
+  app.kubernetes.io/managed-by: Helm
+
+# KubeVersion requirements
+kubeVersion: ">=1.24.0-0"
+
+# Tiller version requirements
+tillerVersion: ">=2.17.0-0"
+
+# Engine
+tillerNamespace: kube-system
+
+# Flow control
+apiVersionV2: true
+
+# Auto-generated files
+ignoreFiles:
+  - "\.env"
+  - "\.gitignore"
+  - "\.git*"
+  - "\.vscode"
+  - "\.idea"
+  - "\.DS_Store"
+  - "Thumbs.db"
+  - "*.log"
+  - "*.tmp"
+  - "*.swp"
+  - "*.swo"
+
+# File permissions
+filePermissions:
+  "/templates/*": "0644"
+  "/charts/*": "0644"
+  "/values.yaml": "0644"
+  "/Chart.yaml": "0644"
+
+# Hooks
+hooks:
+  -
+    type: "pre-install"
+    name: "pre-install-jobs"
+    hook: "pre-install"
+    weight: "-5"
+  -
+    type: "post-install"
+    name: "post-install-jobs"
+    hook: "post-install"
+    weight: "5"
+  -
+    type: "pre-delete"
+    name: "pre-delete-jobs"
+    hook: "pre-delete"
+    weight: "-5"
+  -
+    type: "post-delete"
+    name: "post-delete-jobs"
+    hook: "post-delete"
+    weight: "5"
+
+# RBAC settings
+rbac:
+  create: true
+  serviceAccount:
+    create: true
+    name: todo-app
+
+# Security settings
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 2000
+
+# Network policies
+networkPolicies:
+  enabled: true
+  allowExternal: true
+
+# Resource limits
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+  maxUnavailable: 1
+
+# Service accounts
+serviceAccount:
+  create: true
+  name: todo-app
+  annotations: {}
+
+# Image pull secrets
+imagePullSecrets:
+  - name: todo-registry-secret
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}

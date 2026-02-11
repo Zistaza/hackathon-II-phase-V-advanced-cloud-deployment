@@ -1,0 +1,376 @@
+openapi: 3.0.3
+info:
+  title: Protected API Routes with JWT Verification
+  description: API routes that require JWT authentication for the Todo Full-Stack Web Application
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.todoapp.com
+    description: Production server
+
+paths:
+  /api/{user_id}/tasks:
+    get:
+      summary: List all tasks for authenticated user
+      description: Retrieve all tasks for the specified user, authenticated via JWT
+      tags:
+        - Tasks
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: The user ID whose tasks to retrieve
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '401':
+          description: Unauthorized - invalid or missing JWT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - user_id in URL doesn't match JWT user_id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Create a new task for authenticated user
+      description: Create a new task for the specified user, authenticated via JWT
+      tags:
+        - Tasks
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: The user ID for whom to create the task
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+      responses:
+        '201':
+          description: Task successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          description: Unauthorized - invalid or missing JWT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - user_id in URL doesn't match JWT user_id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/{user_id}/tasks/{id}:
+    get:
+      summary: Get task details
+      description: Retrieve details of a specific task for the authenticated user
+      tags:
+        - Tasks
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: The user ID who owns the task
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          description: The task ID to retrieve
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          description: Unauthorized - invalid or missing JWT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - user_id in URL doesn't match JWT user_id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Update a task
+      description: Update details of a specific task for the authenticated user
+      tags:
+        - Tasks
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: The user ID who owns the task
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          description: The task ID to update
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Task successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          description: Unauthorized - invalid or missing JWT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - user_id in URL doesn't match JWT user_id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete a task
+      description: Delete a specific task for the authenticated user
+      tags:
+        - Tasks
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: The user ID who owns the task
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          description: The task ID to delete
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Task successfully deleted
+        '401':
+          description: Unauthorized - invalid or missing JWT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - user_id in URL doesn't match JWT user_id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/{user_id}/tasks/{id}/complete:
+    patch:
+      summary: Toggle task completion
+      description: Toggle the completion status of a specific task for the authenticated user
+      tags:
+        - Tasks
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: The user ID who owns the task
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          description: The task ID to toggle
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Task completion status successfully toggled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          description: Unauthorized - invalid or missing JWT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - user_id in URL doesn't match JWT user_id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from authentication endpoints
+
+  schemas:
+    Task:
+      type: object
+      required:
+        - id
+        - title
+        - user_id
+        - completed
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          description: Unique task identifier
+          example: "task_123456789"
+        title:
+          type: string
+          description: Task title
+          example: "Complete project proposal"
+        description:
+          type: string
+          description: Optional task description
+          example: "Write and review the Q4 project proposal"
+        user_id:
+          type: string
+          description: ID of the user who owns this task
+          example: "user_987654321"
+        completed:
+          type: boolean
+          description: Whether the task is completed
+          example: false
+        created_at:
+          type: string
+          format: date-time
+          description: Task creation timestamp
+          example: "2023-12-01T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Task last update timestamp
+          example: "2023-12-01T10:00:00Z"
+
+    CreateTaskRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          description: Task title
+          example: "Complete project proposal"
+        description:
+          type: string
+          description: Optional task description
+          example: "Write and review the Q4 project proposal"
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Updated task title
+          example: "Complete project proposal"
+        description:
+          type: string
+          description: Updated task description
+          example: "Write and review the Q4 project proposal"
+        completed:
+          type: boolean
+          description: Updated completion status
+          example: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "UNAUTHORIZED"
+        message:
+          type: string
+          description: Error description
+          example: "Invalid or missing JWT token"
+        details:
+          type: object
+          description: Additional error details
+          example: {}
+
+security:
+  - bearerAuth: []

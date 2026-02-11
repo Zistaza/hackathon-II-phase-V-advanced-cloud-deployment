@@ -1,0 +1,501 @@
+# Docker AI Configuration for Todo AI Chatbot
+
+## Overview
+
+This configuration defines the optimal settings for containerizing the Todo AI Chatbot using Docker AI Agent (Gordon). The configuration focuses on security, performance, and size optimization.
+
+## Global Settings
+
+```yaml
+# Docker AI Global Configuration
+gordon:
+  # Build optimization settings
+  optimize:
+    multi-stage: true
+    non-root-user: true
+    security-hardening: true
+    health-checks: true
+    layer-caching: true
+
+  # Image size optimization
+  size:
+    backend-target: 15MB
+    frontend-target: 50MB
+    compression: gzip
+    layer-optimization: true
+
+  # Security settings
+  security:
+    scan-images: true
+    vulnerability-check: true
+    non-root-enforcement: true
+    security-labels: true
+    secret-detection: true
+
+  # Health check settings
+  health:
+    interval: 30s
+    timeout: 3s
+    retries: 3
+    start-period: 5s
+    path: /health
+
+  # Build performance
+  performance:
+    parallel-builds: true
+    cache-pruning: true
+    buildkit: true
+    output-format: docker
+```
+
+## Backend Application Configuration
+
+```yaml
+# Backend Application Settings
+backend:
+  # Base image configuration
+  base_image:
+    name: python:3.11-slim
+    variant: slim
+    platform: linux/amd64
+
+  # Build stages
+  stages:
+    builder:
+      name: builder
+      image: python:3.11-slim
+      install:
+        - apt-get update
+        - apt-get install -y gcc g++
+        - rm -rf /var/lib/apt/lists/*
+      copy:
+        - requirements.txt
+      command: pip install --user --no-warn-script-location -r requirements.txt
+
+    production:
+      name: production
+      image: python:3.11-slim
+      install:
+        - apt-get update
+        - apt-get install -y libpq5
+        - rm -rf /var/lib/apt/lists/*
+      user:
+        name: appuser
+        create: true
+        shell: /bin/bash
+      copy:
+        - --from=builder /root/.local /root/.local
+        - . .
+      environment:
+        PATH: /root/.local/bin:$PATH
+        PYTHONPATH: /app
+      health_check:
+        path: /health
+        port: 8000
+        interval: 30s
+        timeout: 3s
+        retries: 3
+        start_period: 5s
+
+  # Dependencies management
+  dependencies:
+    requirements:
+      file: requirements.txt
+      install_command: pip install --user --no-warn-script-location -r requirements.txt
+      cache: true
+
+    system_packages:
+      - gcc
+      - g++
+      - libpq5
+
+  # Security settings
+  security:
+    non_root: true
+    user: appuser
+    group: appuser
+    permissions:
+      - chmod 755 /app
+      - chmod 644 /app/*.py
+
+    capabilities:
+      drop:
+        - ALL
+
+    security_labels:
+      maintainer: "Todo AI Chatbot Team"
+      version: "1.0.0"
+      description: "Backend service for Todo AI Chatbot"
+```
+
+## Frontend Application Configuration
+
+```yaml
+# Frontend Application Settings
+frontend:
+  # Base image configuration
+  base_image:
+    name: node:18-alpine
+    variant: alpine
+    platform: linux/amd64
+
+  # Build stages
+  stages:
+    builder:
+      name: builder
+      image: node:18-alpine
+      install:
+        - apk add --no-cache \
+          python3 \
+          make \
+          g++
+      copy:
+        - package*.json
+      command: npm ci --only=production
+
+    production:
+      name: production
+      image: nginx:alpine
+      copy:
+        - --from=builder /app/out /usr/share/nginx/html
+        - nginx.conf /etc/nginx/conf.d/default.conf
+      expose:
+        - 80
+      health_check:
+        path: /
+        port: 80
+        interval: 30s
+        timeout: 3s
+        retries: 3
+        start_period: 5s
+
+  # Dependencies management
+  dependencies:
+    npm:
+      file: package.json
+      install_command: npm ci --only=production
+      cache: true
+
+    system_packages:
+      - python3
+      - make
+      - g++
+
+  # Build optimization
+  optimization:
+    build_target: production
+    source_maps: false
+    compression: gzip
+    cache_control:
+      static: max-age=31536000
+      dynamic: no-cache
+
+  # Security settings
+  security:
+    user: nginx
+    group: nginx
+    permissions:
+      - chmod 755 /usr/share/nginx/html
+      - chmod 644 /usr/share/nginx/html/*
+
+    security_labels:
+      maintainer: "Todo AI Chatbot Team"
+      version: "1.0.0"
+      description: "Frontend service for Todo AI Chatbot"
+```
+
+## Build Configuration
+
+```yaml
+# Build Settings
+build:
+  # Build context
+  context: .
+  dockerfile: Dockerfile
+  tags:
+    - todo-backend:latest
+    - todo-frontend:latest
+
+  # Build arguments
+  args:
+    - BUILDKIT_INLINE_CACHE=1
+    - BUILDKIT_PROGRESS=plain
+
+  # Build options
+  options:
+    squash: false
+    no_cache: false
+    pull: true
+    rm: true
+
+  # Output settings
+  output:
+    type: docker
+    name: todo-chatbot
+    push: false
+```
+
+## Health Check Configuration
+
+```yaml
+# Health Check Settings
+health_checks:
+  # Backend health check
+  backend:
+    path: /health
+    port: 8000
+    interval: 30s
+    timeout: 3s
+    retries: 3
+    start_period: 5s
+    scheme: http
+    headers:
+      User-Agent: Health-Check
+
+  # Frontend health check
+  frontend:
+    path: /
+    port: 80
+    interval: 30s
+    timeout: 3s
+    retries: 3
+    start_period: 5s
+    scheme: http
+    headers:
+      User-Agent: Health-Check
+```
+
+## Security Configuration
+
+```yaml
+# Security Settings
+security:
+  # Non-root user configuration
+  non_root:
+    enabled: true
+    user: appuser  # For backend
+    group: appuser
+    create: true
+    shell: /bin/bash
+
+  # Capabilities management
+  capabilities:
+    drop:
+      - ALL
+    add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+  # Security labels
+  labels:
+    maintainer: "Todo AI Chatbot Team"
+    version: "1.0.0"
+    description: "AI-powered Todo application"
+    security.scan: "true"
+    security.vulnerability: "false"
+
+  # Secret detection
+  secrets:
+    enabled: true
+    patterns:
+      - password
+      - secret
+      - token
+      - key
+      - api_key
+```
+
+## Performance Optimization
+
+```yaml
+# Performance Settings
+performance:
+  # Layer optimization
+  layers:
+    cache: true
+    compression: gzip
+    ordering: optimized
+
+  # Build caching
+  cache:
+    enabled: true
+    prune: true
+    size_limit: 10GB
+
+  # Parallel builds
+  parallel:
+    enabled: true
+    max_builds: 4
+
+  # Output optimization
+  output:
+    format: docker
+    compression: true
+    manifest: true
+```
+
+## Monitoring Configuration
+
+```yaml
+# Monitoring Settings
+monitoring:
+  # Metrics collection
+  metrics:
+    enabled: true
+    collection_interval: 60s
+    retention: 30d
+
+  # Health monitoring
+  health:
+    enabled: true
+    check_interval: 30s
+    alert_threshold: 3
+
+  # Performance monitoring
+  performance:
+    enabled: true
+    sample_rate: 1
+    percentiles: [50, 95, 99]
+```
+
+## Environment Variables
+
+```yaml
+# Environment Variables
+environment:
+  # Backend environment variables
+  backend:
+    - name: DATABASE_URL
+      required: true
+      description: Database connection string
+
+    - name: SECRET_KEY
+      required: true
+      description: Application secret key
+
+    - name: JWT_SECRET
+      required: true
+      description: JWT signing secret
+
+    - name: REDIS_URL
+      required: false
+      description: Redis connection URL
+
+  # Frontend environment variables
+  frontend:
+    - name: API_URL
+      required: true
+      description: Backend API URL
+
+    - name: NODE_ENV
+      required: true
+      description: Node environment (production/development)
+
+    - name: PUBLIC_URL
+      required: true
+      description: Public URL for the application
+```
+
+## Validation Configuration
+
+```yaml
+# Validation Settings
+validation:
+  # Build validation
+  build:
+    enabled: true
+    tests:
+      - syntax
+      - security
+      - size
+      - performance
+
+  # Security validation
+  security:
+    enabled: true
+    scans:
+      - vulnerability
+      - secret-detection
+      - compliance
+
+  # Size validation
+  size:
+    enabled: true
+    limits:
+      backend: 15MB
+      frontend: 50MB
+```
+
+## Logging Configuration
+
+```yaml
+# Logging Settings
+logging:
+  # Log level
+  level: info
+
+  # Log format
+  format: json
+
+  # Log destinations
+  destinations:
+    - stdout
+    - file:///var/log/todo-chatbot.log
+
+  # Log rotation
+  rotation:
+    size: 100MB
+    keep: 10
+    compress: true
+```
+
+## Backup Configuration
+
+```yaml
+# Backup Settings
+backup:
+  # Backup schedule
+  schedule: "0 2 * * *"
+
+  # Backup retention
+  retention: 7d
+
+  # Backup location
+  location: /backups
+
+  # Backup items
+  items:
+    - name: docker-images
+      type: images
+      tags:
+        - todo-backend
+        - todo-frontend
+```
+
+## Recovery Configuration
+
+```yaml
+# Recovery Settings
+recovery:
+  # Recovery timeout
+  timeout: 300
+
+  # Recovery retries
+  retries: 3
+
+  # Recovery procedures
+  procedures:
+    - name: rebuild-backend
+      command: docker ai build backend --name todo-backend --tag latest
+
+    - name: rebuild-frontend
+      command: docker ai build frontend --name todo-frontend --tag latest
+
+    - name: restart-containers
+      command: |
+        docker stop todo-backend todo-frontend
+        docker rm todo-backend todo-frontend
+        docker run -d --name todo-backend todo-backend:latest
+        docker run -d --name todo-frontend todo-frontend:latest
+```

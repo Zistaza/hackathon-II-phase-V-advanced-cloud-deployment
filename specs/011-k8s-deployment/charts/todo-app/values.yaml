@@ -1,0 +1,231 @@
+# Default values for todo-app.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global settings
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# Docker images
+images:
+  backend:
+    repository: todo-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+
+  frontend:
+    repository: todo-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+
+# Application configuration
+app:
+  name: todo-app
+  replicaCount: 1
+  fullnameOverride: ""
+  nameOverride: ""
+  commonLabels: {}
+  commonAnnotations: {}
+
+  # Backend configuration
+  backend:
+    enabled: true
+    replicaCount: 2
+    containerPort: 8000
+    livenessProbe:
+      path: /health
+      port: 8000
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      successThreshold: 1
+      failureThreshold: 3
+    readinessProbe:
+      path: /health
+      port: 8000
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      successThreshold: 1
+      failureThreshold: 3
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+    env:
+      - name: DATABASE_URL
+        valueFrom:
+          secretKeyRef:
+            name: todo-secrets
+            key: database-url
+      - name: SECRET_KEY
+        valueFrom:
+          secretKeyRef:
+            name: todo-secrets
+            key: secret-key
+      - name: JWT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: todo-secrets
+            key: jwt-secret
+
+  # Frontend configuration
+  frontend:
+    enabled: true
+    replicaCount: 1
+    containerPort: 80
+    livenessProbe:
+      path: /
+      port: 80
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      successThreshold: 1
+      failureThreshold: 3
+    readinessProbe:
+      path: /
+      port: 80
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      successThreshold: 1
+      failureThreshold: 3
+    resources:
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
+      requests:
+        cpu: "50m"
+        memory: "128Mi"
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+    env:
+      - name: API_URL
+        value: http://todo-backend:8000
+      - name: NODE_ENV
+        value: production
+
+# Service configuration
+services:
+  backend:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+    annotations: {}
+    labels: {}
+
+  frontend:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+    protocol: TCP
+    annotations: {}
+    labels: {}
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  labels: {}
+  hosts:
+    - host: todo.local
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: todo-frontend
+              port:
+                number: 80
+  tls: []
+
+# Network policies
+networkPolicies:
+  enabled: true
+  backend:
+    from:
+      - podSelector:
+          matchLabels:
+            app: todo-frontend
+    ports:
+      - protocol: TCP
+        port: 8000
+  frontend:
+    from:
+      - ipBlock:
+          cidr: 0.0.0.0/0
+    ports:
+      - protocol: TCP
+        port: 80
+
+# Resource quotas
+resourceQuotas:
+  enabled: false
+  hard:
+    requests.cpu: "1000m"
+    requests.memory: "1Gi"
+    limits.cpu: "2000m"
+    limits.memory: "2Gi"
+    pods: "10"
+
+# Horizontal pod autoscaler
+hpa:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+  maxUnavailable: 1
+
+# Service accounts
+serviceAccount:
+  create: true
+  name: todo-app
+  annotations: {}
+
+# Image pull secrets
+imagePullSecrets:
+  - name: todo-registry-secret
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}

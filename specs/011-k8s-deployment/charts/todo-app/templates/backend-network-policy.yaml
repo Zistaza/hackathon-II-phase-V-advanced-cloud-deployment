@@ -1,0 +1,72 @@
+{{/*
+Copyright 2023 The Helm Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+
+{{/*
+Create the backend network policy
+*/}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "todo-app.fullname" . }}-backend-network-policy
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+  {{- with .Values.networkPolicies.backend.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "todo-app.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    {{- if .Values.networkPolicies.backend.allowExternal }}
+    # Allow external access to backend service
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: {{ .Values.services.backend.port }}
+    {{- end }}
+    # Allow frontend to access backend
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "todo-app.selectorLabels" . | nindent 12 }}
+              app.kubernetes.io/component: frontend
+      ports:
+        - protocol: TCP
+          port: {{ .Values.services.backend.port }}
+    # Allow other backend pods to access each other
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "todo-app.selectorLabels" . | nindent 12 }}
+              app.kubernetes.io/component: backend
+      ports:
+        - protocol: TCP
+          port: {{ .Values.services.backend.port }}
+  egress:
+    # Allow all egress traffic (can be restricted as needed)
+    - {}
+  {{- with .Values.networkPolicies.backend.additionalRules }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

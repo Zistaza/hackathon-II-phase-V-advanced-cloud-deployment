@@ -1,0 +1,45 @@
+# Node.js dependencies
+node_modules/
+
+# Version control
+.git/
+
+# Docker files
+Dockerfile*
+.dockerignore
+
+# Logs
+*.log*
+
+# Environment variables
+.env*
+
+# Coverage and build artifacts
+coverage/
+dist/
+build/
+
+# Temporary files
+*.tmp
+*.swp
+
+# IDE files
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Helm charts
+.charts/
+charts/*.tgz
+
+# Minikube
+minikube/

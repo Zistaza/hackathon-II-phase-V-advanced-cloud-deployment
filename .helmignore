@@ -1,0 +1,38 @@
+# Logs
+*.log*
+
+# Environment variables
+.env*
+
+# Node.js dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+
+# Temporary files
+*.tmp
+
+# Version control
+.git/
+
+# IDE files
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Helm cache
+.charts/
+
+# Minikube
+minikube/

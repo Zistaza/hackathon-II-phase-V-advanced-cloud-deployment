@@ -1,0 +1,563 @@
+# kubectl-ai Configuration for Todo AI Chatbot
+
+## Overview
+
+This configuration defines the settings for kubectl-ai to provide AI-assisted Kubernetes operations for the Todo AI Chatbot deployment.
+
+## Global Configuration
+
+```yaml
+# kubectl-ai Global Configuration
+provider:
+  name: openai
+  model: gpt-4
+  api_key: "${OPENAI_API_KEY}"
+  timeout: 30
+  max_tokens: 4000
+
+context:
+  name: todo-chatbot
+  cluster: minikube
+  namespace: default
+  user: admin
+  auth_provider: oidc
+
+auto_approve: false
+verbose: true
+log_level: info
+```
+
+## Command Configuration
+
+```yaml
+# Command Settings
+commands:
+  # Deploy command configuration
+  deploy:
+    description: Deploy application using AI assistance
+    template: |
+      Deploy the {resource} using helm chart {chart} with the following configuration:
+      - Replicas: {replicas}
+      - Resources: {resources}
+      - Health checks: {health_checks}
+      - Environment: {environment}
+
+    examples:
+      - "deploy the todo-app using helm chart todo-app"
+      - "deploy the backend deployment with 2 replicas"
+      - "deploy the frontend service with load balancer"
+
+    validation:
+      required:
+        - resource
+        - chart
+      optional:
+        - replicas
+        - resources
+        - health_checks
+        - environment
+
+  # Scale command configuration
+  scale:
+    description: Scale deployment using AI assistance
+    template: |
+      Scale the {resource} to {replicas} replicas based on the following considerations:
+      - Current resource utilization
+      - Expected traffic patterns
+      - Cost optimization
+      - Performance requirements
+
+    examples:
+      - "scale the todo-backend to 3 replicas"
+      - "scale the frontend deployment to handle increased traffic"
+      - "scale the database deployment for better performance"
+
+    validation:
+      required:
+        - resource
+        - replicas
+      optional:
+        - reason
+        - strategy
+
+  # Debug command configuration
+  debug:
+    description: Debug Kubernetes resources using AI assistance
+    template: |
+      Debug the {resource} and provide solutions for the following issues:
+      - Pod status and readiness
+      - Resource utilization problems
+      - Network connectivity issues
+      - Configuration errors
+
+    examples:
+      - "debug the todo-backend deployment"
+      - "debug the frontend service connectivity"
+      - "debug the database connection issues"
+
+    validation:
+      required:
+        - resource
+      optional:
+        - issue_type
+        - severity
+
+  # Update command configuration
+  update:
+    description: Update Kubernetes resources using AI assistance
+    template: |
+      Update the {resource} with the following changes:
+      - New image version: {image}
+      - Resource changes: {resources}
+      - Configuration updates: {config}
+      - Rolling update strategy: {strategy}
+
+    examples:
+      - "update the todo-backend to use latest image"
+      - "update the frontend deployment resources"
+      - "update the ingress configuration"
+
+    validation:
+      required:
+        - resource
+        - changes
+      optional:
+        - image
+        - resources
+        - config
+        - strategy
+
+  # Status command configuration
+  status:
+    description: Get status of Kubernetes resources using AI assistance
+    template: |
+      Get the status of {resource} including:
+      - Current state and health
+      - Resource utilization
+      - Recent events and errors
+      - Recommendations for improvement
+
+    examples:
+      - "status of todo-backend deployment"
+      - "status of frontend service"
+      - "status of entire application"
+
+    validation:
+      required:
+        - resource
+      optional:
+        - details
+        - metrics
+
+  # Analyze command configuration
+  analyze:
+    description: Analyze Kubernetes resources using AI assistance
+    template: |
+      Analyze the {resource} for:
+      - Performance bottlenecks
+      - Resource optimization opportunities
+      - Security vulnerabilities
+      - Cost optimization suggestions
+
+    examples:
+      - "analyze the todo-backend deployment"
+      - "analyze the frontend service performance"
+      - "analyze the entire cluster"
+
+    validation:
+      required:
+        - resource
+      optional:
+        - focus_area
+        - depth
+
+  # Optimize command configuration
+  optimize:
+    description: Optimize Kubernetes resources using AI assistance
+    template: |
+      Optimize the {resource} by:
+      - Adjusting resource limits and requests
+      - Recommending scaling strategies
+      - Suggesting configuration improvements
+      - Identifying cost savings
+
+    examples:
+      - "optimize the todo-backend deployment"
+      - "optimize the frontend service"
+      - "optimize the entire cluster"
+
+    validation:
+      required:
+        - resource
+      optional:
+        - optimization_type
+        - target
+```
+
+## Resource Configuration
+
+```yaml
+# Resource-Specific Settings
+resources:
+  # Deployment settings
+  deployments:
+    todo-backend:
+      replicas: 2
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "256Mi"
+        limits:
+          cpu: "500m"
+          memory: "512Mi"
+      health_checks:
+        liveness:
+          path: /health
+          port: 8000
+          initial_delay: 30
+          period: 10
+        readiness:
+          path: /health
+          port: 8000
+          initial_delay: 5
+          period: 5
+
+    todo-frontend:
+      replicas: 1
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "128Mi"
+        limits:
+          cpu: "200m"
+          memory: "256Mi"
+      health_checks:
+        liveness:
+          path: /
+          port: 80
+          initial_delay: 30
+          period: 10
+        readiness:
+          path: /
+          port: 80
+          initial_delay: 5
+          period: 5
+
+  # Service settings
+  services:
+    todo-backend:
+      type: ClusterIP
+      ports:
+        - port: 8000
+          target_port: 8000
+          protocol: TCP
+
+    todo-frontend:
+      type: ClusterIP
+      ports:
+        - port: 80
+          target_port: 80
+          protocol: TCP
+
+  # Ingress settings
+  ingress:
+    todo-chatbot:
+      host: todo.local
+      paths:
+        - path: /
+          service: todo-frontend
+          port: 80
+      tls:
+        enabled: false
+        secret_name: todo-tls
+
+  # ConfigMap settings
+  configmaps:
+    todo-backend-config:
+      data:
+        DATABASE_URL: ${DATABASE_URL}
+        SECRET_KEY: ${SECRET_KEY}
+        JWT_SECRET: ${JWT_SECRET}
+
+    todo-frontend-config:
+      data:
+        API_URL: http://todo-backend:8000
+        NODE_ENV: production
+```
+
+## AI Provider Configuration
+
+```yaml
+# AI Provider Settings
+ai_provider:
+  # OpenAI configuration
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    model: gpt-4
+    temperature: 0.7
+    max_tokens: 4000
+    timeout: 30
+
+    # Context management
+    context_size: 4000
+    memory_size: 8000
+    retention_policy: 30d
+
+    # Rate limiting
+    rate_limit:
+      requests: 100
+      window: 1m
+      retry_after: 60
+
+  # Anthropic configuration (alternative provider)
+anthropic:
+    api_key: "${ANTHROPIC_API_KEY}"
+    model: claude-3-5-sonnet-20241022
+    temperature: 0.7
+    max_tokens: 4000
+    timeout: 30
+
+    # Context management
+    context_size: 4000
+    memory_size: 8000
+    retention_policy: 30d
+
+    # Rate limiting
+    rate_limit:
+      requests: 100
+      window: 1m
+      retry_after: 60
+```
+
+## Security Configuration
+
+```yaml
+# Security Settings
+security:
+  # API key management
+  api_keys:
+    openai:
+      key: "${OPENAI_API_KEY}"
+      encrypted: true
+      rotation: 30d
+
+    anthropic:
+      key: "${ANTHROPIC_API_KEY}"
+      encrypted: true
+      rotation: 30d
+
+  # Network security
+  network:
+    allowlist:
+      - api.openai.com
+      - api.anthropic.com
+    denylist:
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+
+  # Data privacy
+  privacy:
+    data_handling: anonymized
+    retention_policy: 30d
+    encryption: aes-256-gcm
+
+  # Audit logging
+  audit:
+    enabled: true
+    level: info
+    retention: 90d
+    destinations:
+      - file:///var/log/kubectl-ai-audit.log
+      - syslog://localhost:514
+```
+
+## Monitoring Configuration
+
+```yaml
+# Monitoring Settings
+monitoring:
+  # Metrics collection
+  metrics:
+    enabled: true
+    collection_interval: 60s
+    retention: 30d
+    destinations:
+      - prometheus://localhost:9090
+      - influxdb://localhost:8086
+
+  # Health monitoring
+  health:
+    enabled: true
+    check_interval: 30s
+    alert_threshold: 3
+    destinations:
+      - slack://#k8s-alerts
+      - email://admin@example.com
+
+  # Performance monitoring
+  performance:
+    enabled: true
+    sample_rate: 1
+    percentiles: [50, 95, 99]
+    destinations:
+      - grafana://localhost:3000
+      - datadog://api.datadoghq.com
+```
+
+## Logging Configuration
+
+```yaml
+# Logging Settings
+logging:
+  # Log level
+  level: info
+
+  # Log format
+  format: json
+
+  # Log destinations
+  destinations:
+    - stdout
+    - file:///var/log/kubectl-ai.log
+    - syslog://localhost:514
+
+  # Log rotation
+  rotation:
+    size: 100MB
+    keep: 10
+    compress: true
+
+  # Log filtering
+  filter:
+    include:
+      - info
+      - warning
+      - error
+    exclude:
+      - debug
+      - trace
+```
+
+## Backup Configuration
+
+```yaml
+# Backup Settings
+backup:
+  # Backup schedule
+  schedule: "0 2 * * *"
+
+  # Backup retention
+  retention: 7d
+
+  # Backup location
+  location: /backups/kubectl-ai
+
+  # Backup items
+  items:
+    - name: configuration
+      path: ~/.kubectl-ai
+      type: directory
+
+    - name: logs
+      path: /var/log/kubectl-ai
+      type: directory
+
+    - name: state
+      path: /var/lib/kubectl-ai
+      type: directory
+```
+
+## Recovery Configuration
+
+```yaml
+# Recovery Settings
+recovery:
+  # Recovery timeout
+  timeout: 300
+
+  # Recovery retries
+  retries: 3
+
+  # Recovery procedures
+  procedures:
+    - name: restart-service
+      command: |
+        kubectl scale deployment {resource} --replicas=0
+        sleep 10
+        kubectl scale deployment {resource} --replicas={replicas}
+
+    - name: rollback-deployment
+      command: |
+        kubectl rollout undo deployment {resource}
+        kubectl rollout status deployment {resource}
+
+    - name: restore-configuration
+      command: |
+        cp /backups/kubectl-ai/{timestamp}/config ~/.kubectl-ai/
+        kubectl-ai config reload
+```
+
+## Validation Configuration
+
+```yaml
+# Validation Settings
+validation:
+  # Configuration validation
+  config:
+    enabled: true
+    tests:
+      - syntax
+      - semantic
+      - security
+      - performance
+
+  # Command validation
+  commands:
+    enabled: true
+    tests:
+      - syntax
+      - semantic
+      - execution
+      - rollback
+
+  # Security validation
+  security:
+    enabled: true
+    scans:
+      - vulnerability
+      - secret-detection
+      - compliance
+```
+
+## Examples
+
+### Deploy Command
+```bash
+kubectl-ai &quot;deploy the todo-app using helm chart todo-app with 2 backend replicas and 1 frontend replica&quot;
+```
+
+### Scale Command
+```bash
+kubectl-ai &quot;scale the todo-backend to 3 replicas to handle increased traffic&quot;
+```
+
+### Debug Command
+```bash
+kubectl-ai &quot;debug the todo-backend deployment and identify the root cause of the issue&quot;
+```
+
+### Status Command
+```bash
+kubectl-ai &quot;status of todo-backend deployment including resource utilization and recent events&quot;
+```
+
+### Analyze Command
+```bash
+kubectl-ai &quot;analyze the todo-backend deployment for performance bottlenecks and optimization opportunities&quot;
+```
+
+### Optimize Command
+```bash
+kubectl-ai &quot;optimize the todo-backend deployment by adjusting resource limits and requests&quot;
+```

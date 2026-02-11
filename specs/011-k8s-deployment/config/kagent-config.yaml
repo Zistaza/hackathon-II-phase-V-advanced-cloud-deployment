@@ -1,0 +1,620 @@
+# Kagent Configuration for Todo AI Chatbot
+
+## Overview
+
+This configuration defines the settings for Kagent to provide intelligent cluster health monitoring and analysis for the Todo AI Chatbot deployment.
+
+## Global Configuration
+
+```yaml
+# Kagent Global Configuration
+provider:
+  name: openai
+  model: gpt-4
+  api_key: "${OPENAI_API_KEY}"
+  timeout: 30
+  max_tokens: 4000
+
+cluster:
+  name: todo-chatbot-cluster
+  context: minikube
+  namespace: default
+  user: admin
+  auth_provider: oidc
+
+analysis:
+  frequency: daily
+  dry_run: false
+  verbose: true
+  retention: 30d
+
+auto_optimize: true
+optimization_threshold: 80
+
+health:
+  enabled: true
+  check_interval: 60s
+  alert_threshold: 3
+  severity_levels:
+    critical: 90
+    warning: 70
+    info: 50
+
+monitoring:
+  enabled: true
+  collection_interval: 60s
+  retention: 30d
+  destinations:
+    - prometheus://localhost:9090
+    - influxdb://localhost:8086
+
+logging:
+  enabled: true
+  level: info
+  format: json
+  destinations:
+    - stdout
+    - file:///var/log/kagent.log
+    - syslog://localhost:514
+
+backup:
+  enabled: true
+  schedule: "0 2 * * *"
+  retention: 7d
+  location: /backups/kagent
+
+recovery:
+  enabled: true
+  timeout: 300
+  retries: 3
+```
+
+## Resource Configuration
+
+```yaml
+# Resource-Specific Settings
+resources:
+  # Backend resources
+  backend:
+    cpu_request: 100m
+    cpu_limit: 500m
+    memory_request: 256Mi
+    memory_limit: 512Mi
+    replicas: 2
+    health_checks:
+      liveness:
+        path: /health
+        port: 8000
+        initial_delay: 30
+        period: 10
+      readiness:
+        path: /health
+        port: 8000
+        initial_delay: 5
+        period: 5
+
+    # Performance metrics
+    performance:
+      p95_latency: 200ms
+      error_rate: 1%
+      throughput: 100 req/s
+
+    # Resource utilization
+    utilization:
+      cpu: 70%
+      memory: 60%
+      disk: 50%
+      network: 1000 Mbps
+
+  # Frontend resources
+  frontend:
+    cpu_request: 50m
+    cpu_limit: 200m
+    memory_request: 128Mi
+    memory_limit: 256Mi
+    replicas: 1
+    health_checks:
+      liveness:
+        path: /
+        port: 80
+        initial_delay: 30
+        period: 10
+      readiness:
+        path: /
+        port: 80
+        initial_delay: 5
+        period: 5
+
+    # Performance metrics
+    performance:
+      p95_latency: 100ms
+      error_rate: 0.5%
+      throughput: 50 req/s
+
+    # Resource utilization
+    utilization:
+      cpu: 40%
+      memory: 30%
+      disk: 20%
+      network: 500 Mbps
+
+  # Database resources
+  database:
+    external: true
+    connection_string: ${DATABASE_URL}
+    connection_pool: 20
+    max_connections: 100
+    health_check:
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+    # Performance metrics
+    performance:
+      p95_query_time: 100ms
+      error_rate: 0.1%
+      throughput: 200 queries/s
+
+    # Resource utilization
+    utilization:
+      cpu: 30%
+      memory: 40%
+      disk: 60%
+      network: 200 Mbps
+```
+
+## Analysis Configuration
+
+```yaml
+# Analysis Settings
+analysis:
+  # Frequency settings
+  frequency:
+    daily: 0 2 * * *
+    weekly: 0 2 * * 0
+    monthly: 0 2 1 * *
+
+  # Analysis depth
+  depth:
+    quick: 1
+    standard: 2
+    comprehensive: 3
+
+  # Analysis focus areas
+  focus_areas:
+    - performance
+    - security
+    - cost
+    - reliability
+    - scalability
+
+  # Analysis types
+  types:
+    - health
+    - performance
+    - security
+    - cost
+    - optimization
+
+  # Analysis thresholds
+  thresholds:
+    cpu: 80%
+    memory: 80%
+    disk: 90%
+    network: 1000 Mbps
+    latency: 500ms
+    error_rate: 5%
+```
+
+## Health Monitoring Configuration
+
+```yaml
+# Health Check Settings
+health:
+  # System health checks
+  system:
+    - name: cluster-health
+      type: command
+      command: kubectl cluster-info
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      severity: critical
+
+    - name: node-status
+      type: command
+      command: kubectl get nodes -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}'
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      severity: critical
+
+    - name: pod-status
+      type: command
+      command: kubectl get pods --all-namespaces -o jsonpath='{.items[*].status.phase}' | grep -v Running
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      severity: warning
+
+  # Application health checks
+  application:
+    - name: backend-health
+      type: http
+      url: http://todo-backend:8000/health
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      severity: critical
+
+    - name: frontend-health
+      type: http
+      url: http://todo-frontend/
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      severity: critical
+
+    - name: database-health
+      type: command
+      command: psql -h ${DATABASE_HOST} -U ${DATABASE_USER} -d ${DATABASE_NAME} -c "SELECT 1;"
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      severity: critical
+
+  # Performance health checks
+  performance:
+    - name: backend-latency
+      type: metric
+      metric: response_time
+      threshold: 500ms
+      interval: 60s
+      severity: warning
+
+    - name: frontend-load-time
+      type: metric
+      metric: page_load_time
+      threshold: 2s
+      interval: 60s
+      severity: warning
+
+    - name: error-rate
+      type: metric
+      metric: error_rate
+      threshold: 5%
+      interval: 60s
+      severity: critical
+```
+
+## Alert Configuration
+
+```yaml
+# Alert Settings
+alerts:
+  # Severity levels
+  severity:
+    critical: 90
+    warning: 70
+    info: 50
+
+  # Alert destinations
+  destinations:
+    - name: slack
+      type: slack
+      channel: #k8s-alerts
+      webhook: ${SLACK_WEBHOOK_URL}
+
+    - name: email
+      type: email
+      recipients:
+        - admin@example.com
+        - devops@example.com
+      smtp_server: smtp.example.com
+      port: 587
+
+    - name: pagerduty
+      type: pagerduty
+      service_key: ${PAGERDUTY_SERVICE_KEY}
+
+  # Alert rules
+  rules:
+    - name: high-cpu
+      condition: cpu > 80%
+      severity: warning
+      message: "High CPU utilization detected: {value}%"
+      action: scale-up
+      destinations:
+        - slack
+        - email
+
+    - name: high-memory
+      condition: memory > 80%
+      severity: warning
+      message: "High memory utilization detected: {value}%"
+      action: scale-up
+      destinations:
+        - slack
+        - email
+
+    - name: pod-failures
+      condition: pod_failures > 3
+      severity: critical
+      message: "Multiple pod failures detected: {value} failures"
+      action: restart-pods
+      destinations:
+        - slack
+        - pagerduty
+
+    - name: high-error-rate
+      condition: error_rate > 5%
+      severity: critical
+      message: "High error rate detected: {value}%"
+      action: investigate
+      destinations:
+        - slack
+        - email
+
+    - name: slow-response
+      condition: response_time > 500ms
+      severity: warning
+      message: "Slow response time detected: {value}ms"
+      action: optimize
+      destinations:
+        - slack
+        - email
+
+    - name: database-connection-issues
+      condition: database_connections < 10
+      severity: critical
+      message: "Database connection issues detected"
+      action: check-database
+      destinations:
+        - slack
+        - pagerduty
+```
+
+## Optimization Configuration
+
+```yaml
+# Optimization Settings
+optimization:
+  # Resource optimization
+  resources:
+    enabled: true
+    frequency: daily
+    threshold: 80
+    strategies:
+      - name: cpu-optimization
+        type: scaling
+        condition: cpu > 80%
+        action: scale-up
+        parameters:
+          min_replicas: 2
+          max_replicas: 10
+          step: 1
+
+      - name: memory-optimization
+        type: scaling
+        condition: memory > 80%
+        action: scale-up
+        parameters:
+          min_replicas: 2
+          max_replicas: 10
+          step: 1
+
+      - name: cost-optimization
+        type: rightsizing
+        condition: cost > budget
+        action: rightsize
+        parameters:
+          cpu_savings: 20%
+          memory_savings: 30%
+
+  # Performance optimization
+  performance:
+    enabled: true
+    frequency: hourly
+    strategies:
+      - name: latency-optimization
+        type: tuning
+        condition: latency > 500ms
+        action: optimize
+        parameters:
+          cache_enabled: true
+          compression_enabled: true
+          cdn_enabled: true
+
+      - name: throughput-optimization
+        type: scaling
+        condition: throughput < target
+        action: scale-up
+        parameters:
+          min_replicas: 2
+          max_replicas: 10
+          step: 1
+
+  # Security optimization
+  security:
+    enabled: true
+    frequency: daily
+    strategies:
+      - name: vulnerability-scanning
+        type: scanning
+        condition: vulnerabilities_found > 0
+        action: patch
+        parameters:
+          scan_frequency: daily
+          auto_patch: true
+
+      - name: compliance-checking
+        type: auditing
+        condition: compliance_issues_found > 0
+        action: remediate
+        parameters:
+          audit_frequency: weekly
+          auto_remediate: true
+```
+
+## Cost Management Configuration
+
+```yaml
+# Cost Management Settings
+cost:
+  # Budget settings
+  budget:
+    monthly: 1000
+    alert_threshold: 80%
+
+  # Cost tracking
+  tracking:
+    enabled: true
+    frequency: hourly
+    retention: 30d
+    destinations:
+      - prometheus://localhost:9090
+      - influxdb://localhost:8086
+
+  # Cost optimization
+  optimization:
+    enabled: true
+    strategies:
+      - name: resource-rightsizing
+        type: rightsizing
+        condition: overprovisioned
+        action: rightsize
+        parameters:
+          cpu_savings: 20%
+          memory_savings: 30%
+
+      - name: spot-instance-usage
+        type: cost-saving
+        condition: non-critical-workloads
+        action: use-spot
+        parameters:
+          savings: 70%
+          interruption_tolerance: high
+
+      - name: reserved-instance-purchasing
+        type: cost-saving
+        condition: predictable-workloads
+        action: purchase-reserved
+        parameters:
+          term: 1y
+          payment: upfront
+```
+
+## Backup Configuration
+
+```yaml
+# Backup Settings
+backup:
+  # Backup schedule
+  schedule:
+    daily: 0 2 * * *
+    weekly: 0 2 * * 0
+    monthly: 0 2 1 * *
+
+  # Backup retention
+  retention:
+    daily: 7d
+    weekly: 4w
+    monthly: 12m
+
+  # Backup location
+  location: /backups/kagent
+
+  # Backup items
+  items:
+    - name: configuration
+      path: ~/.kagent
+      type: directory
+
+    - name: logs
+      path: /var/log/kagent
+      type: directory
+
+    - name: state
+      path: /var/lib/kagent
+      type: directory
+
+    - name: database
+      type: database
+      connection_string: ${DATABASE_URL}
+      tables:
+        - metrics
+        - alerts
+        - optimizations
+```
+
+## Recovery Configuration
+
+```yaml
+# Recovery Settings
+recovery:
+  # Recovery timeout
+  timeout: 300
+
+  # Recovery retries
+  retries: 3
+
+  # Recovery procedures
+  procedures:
+    - name: cluster-restart
+      command: |
+        kubectl drain nodes --ignore-daemonsets --delete-local-data
+        kubectl delete nodes --ignore-daemonsets
+        minikube stop
+        minikube start --cpus=4 --memory=8192
+
+    - name: addon-recovery
+      command: |
+        minikube addons disable ingress
+        minikube addons enable ingress
+        kubectl delete ingress todo-ingress
+        kubectl apply -f ingress.yaml
+
+    - name: configuration-recovery
+      command: |
+        cp /backups/kagent/{timestamp}/config ~/.kagent/
+        kubectl-ai config reload
+        kagent config reload
+
+    - name: database-recovery
+      command: |
+        kubectl delete pods -l app=database
+        kubectl apply -f database.yaml
+        kubectl wait --for=condition=ready pod -l app=database --timeout=300s
+```
+
+## Examples
+
+### Health Analysis
+```bash
+kagent analyze cluster --health
+```
+
+### Performance Analysis
+```bash
+kagent analyze deployment todo-backend --performance
+```
+
+### Cost Analysis
+```bash
+kagent analyze cost --monthly
+```
+
+### Resource Optimization
+```bash
+kagent optimize resources --cluster
+```
+
+### Security Analysis
+```bash
+kagent analyze security --vulnerabilities
+```
+
+### Compliance Analysis
+```bash
+kagent analyze compliance --standards
+```

@@ -1,0 +1,401 @@
+# Minikube Configuration
+
+## Overview
+
+This configuration file defines the optimal settings for running the Todo AI Chatbot on a local Minikube cluster.
+
+## Cluster Configuration
+
+### Resource Allocation
+
+```yaml
+# CPU and Memory Configuration
+cpus: 4
+memory: 8192  # MB (8GB)
+disk_size: 30000  # MB (30GB)
+
+# Kubernetes Version
+kubernetes_version: v1.28.0
+
+# Driver Configuration
+driver: docker
+```
+
+### Addons Configuration
+
+```yaml
+# Enabled Addons
+addons:
+  - ingress
+  - metrics-server
+  - dashboard
+  - registry
+  - storage-provisioner
+
+# Addon Settings
+ingress:
+  enabled: true
+  http: true
+  https: false
+
+metrics-server:
+  enabled: true
+  memory: 256Mi
+
+dashboard:
+  enabled: true
+  heapster: false
+```
+
+### Networking Configuration
+
+```yaml
+# Networking Settings
+networking:
+  ip_family: ipv4
+  service_subnet: 10.96.0.0/12
+  pod_subnet: 10.244.0.0/16
+  dns_domain: cluster.local
+
+# Load Balancer Configuration
+load_balancer:
+  enabled: false
+  start_ip: ""
+  end_ip: ""
+```
+
+### Storage Configuration
+
+```yaml
+# Storage Settings
+storage:
+  provisioner: k8s.io/minikube-hostpath
+  class: standard
+  size: 20Gi
+
+# Persistent Volumes
+persistent_volumes:
+  - name: todo-data
+    size: 5Gi
+    access_modes: ["ReadWriteOnce"]
+    storage_class: standard
+```
+
+### Security Configuration
+
+```yaml
+# Security Settings
+security:
+  container_runtime: docker
+  runtime_config:
+    no_new_privs: true
+    apparmor: true
+    seccomp: true
+
+# Pod Security Policies
+pod_security:
+  privileged: false
+  allow_privilege_escalation: false
+  run_as_user:
+    rule: MustRunAsNonRoot
+```
+
+## Environment Variables
+
+```bash
+# Minikube Configuration
+export MINIKUBE_WANTUPDATENOTIFICATION=false
+export MINIKUBE_WANTREPORTERRORPROMPT=false
+export MINIKUBE_HOME=$HOME
+export CHANGE_MINIKUBE_NONE_USER=true
+
+# Kubernetes Configuration
+export KUBECONFIG=$HOME/.kube/config
+export K8S_CONTEXT=minikube
+
+# Docker Configuration
+export DOCKER_HOST='unix:///var/run/docker.sock'
+export DOCKER_TLS_CERTDIR=''
+```
+
+## Startup Script Configuration
+
+```bash
+#!/bin/bash
+
+# Minikube Startup Configuration
+minikube start \
+  --cpus=4 \
+  --memory=8192 \
+  --disk-size=30g \
+  --driver=docker \
+  --kubernetes-version=v1.28.0 \
+  --addons=ingress,metrics-server,dashboard,registry,storage-provisioner
+
+# Additional Configuration
+minikube addons enable ingress
+minikube addons enable metrics-server
+minikube addons enable dashboard
+minikube addons enable registry
+minikube addons enable storage-provisioner
+
+# Set context
+kubectl config use-context minikube
+
+# Verify setup
+kubectl cluster-info
+kubectl get nodes -o wide
+kubectl get all --all-namespaces
+```
+
+## Validation Configuration
+
+```yaml
+# Health Checks
+health_checks:
+  - name: cluster-health
+    type: command
+    command: kubectl cluster-info
+    interval: 30s
+    timeout: 10s
+    retries: 3
+
+  - name: node-status
+    type: command
+    command: kubectl get nodes -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}'
+    interval: 30s
+    timeout: 10s
+    retries: 3
+
+  - name: pod-status
+    type: command
+    command: kubectl get pods --all-namespaces -o jsonpath='{.items[*].status.phase}' | grep -v Running
+    interval: 30s
+    timeout: 10s
+    retries: 3
+
+# Performance Metrics
+performance_metrics:
+  - name: cpu-usage
+    type: command
+    command: kubectl top nodes --no-headers | awk '{print $2}' | sed 's/%//'
+    threshold: 80
+    interval: 60s
+
+  - name: memory-usage
+    type: command
+    command: kubectl top nodes --no-headers | awk '{print $3}' | sed 's/%//'
+    threshold: 80
+    interval: 60s
+
+  - name: pod-count
+    type: command
+    command: kubectl get pods --all-namespaces | wc -l
+    threshold: 100
+    interval: 60s
+```
+
+## Troubleshooting Configuration
+
+```yaml
+# Common Issues
+issues:
+  - name: insufficient-resources
+    condition: |
+      kubectl top nodes | grep -q "0%>"
+    solution: |
+      echo "Insufficient resources. Try:
+      minikube stop
+      minikube start --cpus=4 --memory=8192"
+
+  - name: network-issues
+    condition: |
+      ! ping -c 1 $(minikube ip) &&; > /dev/null 2&amp;1
+    solution: |
+      echo "Network issues. Try:
+      minikube stop
+      minikube start --driver=docker"
+
+  - name: addon-issues
+    condition: |
+      kubectl get pods -n kube-system | grep -q "Error"
+    solution: |
+      echo "Addon issues. Try:
+      minikube addons disable <addon>
+      minikube addons enable <addon>"
+```
+
+## Monitoring Configuration
+
+```yaml
+# Monitoring Settings
+monitoring:
+  enabled: true
+  interval: 60s
+  retention: 30d
+
+# Metrics Collection
+metrics:
+  - cpu
+  - memory
+  - disk
+  - network
+  - pod_count
+  - node_count
+
+# Alerting
+alerts:
+  - name: high-cpu
+    condition: cpu > 80%
+    severity: warning
+    action: scale-up
+
+  - name: high-memory
+    condition: memory > 80%
+    severity: warning
+    action: scale-up
+
+  - name: low-disk
+    condition: disk < 10%
+    severity: critical
+    action: cleanup
+```
+
+## Backup Configuration
+
+```yaml
+# Backup Settings
+backup:
+  enabled: true
+  schedule: "0 2 * * *"
+  retention: 7d
+  storage: /backups
+
+# Backup Items
+backup_items:
+  - name: kube-config
+    path: ~/.kube/config
+    type: file
+
+  - name: helm-charts
+    path: ~/.helm
+    type: directory
+
+  - name: minikube-data
+    path: ~/.minikube
+    type: directory
+```
+
+## Recovery Configuration
+
+```yaml
+# Recovery Settings
+recovery:
+  enabled: true
+  timeout: 300
+  retries: 3
+
+# Recovery Procedures
+recovery_procedures:
+  - name: cluster-restart
+    command: |
+      minikube stop
+      minikube start --cpus=4 --memory=8192
+
+  - name: addon-recovery
+    command: |
+      minikube addons disable ingress
+      minikube addons enable ingress
+
+  - name: network-recovery
+    command: |
+      minikube tunnel
+      kubectl proxy
+```
+
+## Configuration Validation
+
+```bash
+# Validate Minikube Configuration
+function validate_minikube_config() {
+    # Check resources
+    if [ $(minikube config get cpus) -lt 4 ]; then
+        echo "❌ Insufficient CPU allocation"
+        return 1
+    fi
+
+    if [ $(minikube config get memory) -lt 8192 ]; then
+        echo "❌ Insufficient memory allocation"
+        return 1
+    fi
+
+    # Check addons
+    for addon in ingress metrics-server dashboard; do
+        if ! minikube addons list | grep -q "$addon.*enabled"; then
+            echo "❌ $addon addon not enabled"
+            return 1
+        fi
+    done
+
+    # Check networking
+    if ! kubectl cluster-info > /dev/null 2&amp;1; then
+        echo "❌ Cluster networking not working"
+        return 1
+    fi
+
+    echo "✅ Minikube configuration is valid"
+    return 0
+}
+
+# Validate Kubernetes Configuration
+function validate_k8s_config() {
+    # Check API server
+    if ! kubectl version > /dev/null 2&amp;1; then
+        echo "❌ Kubernetes API server not accessible"
+        return 1
+    fi
+
+    # Check nodes
+    if [ $(kubectl get nodes -o jsonpath='{.items[*].status.conditions[?(@.type=="Ready")].status}' | grep -c True) -eq 0 ]; then
+        echo "❌ No ready nodes found"
+        return 1
+    fi
+
+    # Check core services
+    for service in kube-dns kube-proxy; do
+        if kubectl get pods -n kube-system | grep -q "$service.*Running"; then
+            echo "❌ $service not running"
+            return 1
+        fi
+    done
+
+    echo "✅ Kubernetes configuration is valid"
+    return 0
+}
+```
+
+## Best Practices
+
+### Resource Management
+- **Start with 4 CPU, 8GB RAM, 30GB disk**
+- **Monitor resource usage regularly**
+- **Scale resources based on application needs**
+- **Clean up unused resources periodically**
+
+### Security
+- **Use non-root containers**
+- **Enable RBAC and network policies**
+- **Regularly update Kubernetes and addons**
+- **Monitor security events**
+
+### Performance
+- **Enable metrics-server for monitoring**
+- **Use appropriate resource limits**
+- **Configure horizontal pod autoscaling**
+- **Optimize container images**
+
+### Maintenance
+- **Regular backups of configuration**
+- **Update Minikube and Kubernetes regularly**
+- **Monitor cluster health and performance**
+- **Clean up unused resources and images**

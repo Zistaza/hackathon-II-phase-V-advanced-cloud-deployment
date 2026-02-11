@@ -1,0 +1,53 @@
+🎉 Todo Chatbot Application has been deployed!
+
+Your application consists of:
+{{- if .Values.backend.enabled }}
+  ✓ Backend API (FastAPI)
+{{- end }}
+{{- if .Values.frontend.enabled }}
+  ✓ Frontend (Next.js)
+{{- end }}
+
+📍 Access your application:
+
+{{- if .Values.frontend.enabled }}
+Frontend:
+{{- if eq .Values.frontend.service.type "NodePort" }}
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo "Frontend URL: http://$NODE_IP:{{ .Values.frontend.service.nodePort }}"
+
+  For Minikube, use:
+  minikube service {{ include "todo-chatbot.fullname" . }}-frontend --url
+{{- end }}
+{{- end }}
+
+{{- if .Values.backend.enabled }}
+Backend API:
+{{- if eq .Values.backend.service.type "NodePort" }}
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo "Backend URL: http://$NODE_IP:{{ .Values.backend.service.nodePort }}"
+  echo "Health Check: http://$NODE_IP:{{ .Values.backend.service.nodePort }}/health"
+
+  For Minikube, use:
+  minikube service {{ include "todo-chatbot.fullname" . }}-backend --url
+{{- end }}
+{{- end }}
+
+📊 Check deployment status:
+  kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/instance={{ .Release.Name }}"
+  kubectl get services --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/instance={{ .Release.Name }}"
+
+📝 View logs:
+{{- if .Values.backend.enabled }}
+  Backend: kubectl logs -f deployment/{{ include "todo-chatbot.fullname" . }}-backend --namespace {{ .Release.Namespace }}
+{{- end }}
+{{- if .Values.frontend.enabled }}
+  Frontend: kubectl logs -f deployment/{{ include "todo-chatbot.fullname" . }}-frontend --namespace {{ .Release.Namespace }}
+{{- end }}
+
+🔄 To upgrade the deployment:
+  helm upgrade {{ .Release.Name }} ./todo-chatbot --namespace {{ .Release.Namespace }}
+
+🗑️  To uninstall:
+  helm uninstall {{ .Release.Name }} --namespace {{ .Release.Namespace }}
+
