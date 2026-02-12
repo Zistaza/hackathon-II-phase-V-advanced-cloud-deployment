@@ -1,0 +1,55 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: default
+spec:
+  type: state.postgresql
+  version: v1
+  metadata:
+  # Connection string (use secret reference in production)
+  - name: connectionString
+    value: "host=localhost user=postgres password=postgres port=5432 connect_timeout=10 database=todo_chatbot sslmode=disable"
+  # Table name for state storage
+  - name: tableName
+    value: "dapr_state"
+  # Metadata table name
+  - name: metadataTableName
+    value: "dapr_metadata"
+  # Timeout for database operations
+  - name: timeout
+    value: "20"
+  # Cleanup interval for expired state (in seconds)
+  - name: cleanupIntervalInSeconds
+    value: "3600"
+scopes:
+- todo-api
+- recurring-task-service
+- notification-service
+---
+# Production configuration with Neon PostgreSQL (commented out)
+# apiVersion: dapr.io/v1alpha1
+# kind: Component
+# metadata:
+#   name: statestore
+#   namespace: production
+# spec:
+#   type: state.postgresql
+#   version: v1
+#   metadata:
+#   - name: connectionString
+#     secretKeyRef:
+#       name: postgres-secrets
+#       key: connectionString
+#   - name: tableName
+#     value: "dapr_state"
+#   - name: metadataTableName
+#     value: "dapr_metadata"
+#   - name: timeout
+#     value: "20"
+#   - name: cleanupIntervalInSeconds
+#     value: "3600"
+# scopes:
+# - todo-api
+# - recurring-task-service
+# - notification-service

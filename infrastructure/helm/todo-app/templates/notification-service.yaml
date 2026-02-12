@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "todo-app.fullname" . }}-notification-service
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: notification-service
+spec:
+  replicas: {{ .Values.notificationService.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "todo-app.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: notification-service
+  template:
+    metadata:
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "notification-service"
+        dapr.io/app-port: "8001"
+        dapr.io/log-level: "info"
+        dapr.io/enable-metrics: "true"
+        dapr.io/metrics-port: "9090"
+      labels:
+        {{- include "todo-app.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: notification-service
+    spec:
+      serviceAccountName: {{ include "todo-app.serviceAccountName" . }}
+      containers:
+      - name: notification-service
+        image: "{{ .Values.notificationService.image.repository }}:{{ .Values.notificationService.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.notificationService.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8001
+          protocol: TCP
+        env:
+        - name: DAPR_HTTP_PORT
+          value: "3500"
+        - name: DAPR_GRPC_PORT
+          value: "50001"
+        - name: LOG_LEVEL
+          value: {{ .Values.notificationService.logLevel | default "info" }}
+        {{- if .Values.notificationService.smtp.enabled }}
+        - name: SMTP_HOST
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.notificationService.smtp.secretName }}
+              key: host
+        - name: SMTP_PORT
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.notificationService.smtp.secretName }}
+              key: port
+        - name: SMTP_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.notificationService.smtp.secretName }}
+              key: username
+        - name: SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.notificationService.smtp.secretName }}
+              key: password
+        {{- end }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.notificationService.resources | nindent 10 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "todo-app.fullname" . }}-notification-service
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: notification-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8001
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    {{- include "todo-app.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: notification-service

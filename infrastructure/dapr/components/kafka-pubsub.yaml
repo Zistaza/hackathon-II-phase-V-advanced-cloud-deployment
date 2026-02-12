@@ -1,0 +1,70 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: kafka-pubsub
+  namespace: default
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  # Kafka broker addresses
+  - name: brokers
+    value: "localhost:9092"
+  # Consumer group for this application
+  - name: consumerGroup
+    value: "todo-chatbot-group"
+  # Client ID
+  - name: clientID
+    value: "todo-chatbot-client"
+  # Authentication type (none for local, SASL for production)
+  - name: authType
+    value: "none"
+  # Max message bytes
+  - name: maxMessageBytes
+    value: "1024000"
+  # Consumer fetch default
+  - name: consumerFetchDefault
+    value: "1048576"
+  # Enable idempotency
+  - name: enableIdempotence
+    value: "true"
+  # Acks required
+  - name: acks
+    value: "all"
+scopes:
+- todo-api
+- recurring-task-service
+- notification-service
+---
+# Production configuration (commented out for local development)
+# apiVersion: dapr.io/v1alpha1
+# kind: Component
+# metadata:
+#   name: kafka-pubsub
+#   namespace: production
+# spec:
+#   type: pubsub.kafka
+#   version: v1
+#   metadata:
+#   - name: brokers
+#     value: "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092"
+#   - name: consumerGroup
+#     value: "todo-chatbot-group"
+#   - name: authType
+#     value: "password"
+#   - name: saslUsername
+#     secretKeyRef:
+#       name: kafka-secrets
+#       key: username
+#   - name: saslPassword
+#     secretKeyRef:
+#       name: kafka-secrets
+#       key: password
+#   - name: enableIdempotence
+#     value: "true"
+#   - name: acks
+#     value: "all"
+# scopes:
+# - todo-api
+# - recurring-task-service
+# - notification-service

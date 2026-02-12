@@ -1,0 +1,38 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: jobs-api
+  namespace: default
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+  # Schedule format (cron expression)
+  - name: schedule
+    value: "@every 1m"
+  # Direction (input for receiving, output for sending)
+  - name: direction
+    value: "input,output"
+scopes:
+- todo-api
+- reminder-scheduler
+---
+# Note: Dapr Jobs API is a built-in feature in Dapr 1.12+
+# This component configuration enables job scheduling capabilities
+# Jobs are created programmatically via Dapr HTTP/gRPC API
+#
+# Example job creation:
+# POST http://localhost:3500/v1.0-alpha1/jobs/{jobName}
+# {
+#   "schedule": "2026-02-15T10:00:00Z",
+#   "data": {
+#     "task_id": "uuid",
+#     "user_id": "user123",
+#     "reminder_message": "Task due in 1 hour"
+#   }
+# }
+#
+# Jobs API endpoints:
+# - POST /v1.0-alpha1/jobs/{jobName} - Create/update job
+# - GET /v1.0-alpha1/jobs/{jobName} - Get job details
+# - DELETE /v1.0-alpha1/jobs/{jobName} - Delete job

@@ -1,0 +1,98 @@
+{
+  "dashboard": {
+    "title": "Task Operations Dashboard",
+    "tags": ["phase-v", "tasks"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Task Operations per Second",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(task_operations_total[5m])",
+            "legendFormat": "{{operation}} - {{status}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Task Operation Duration (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(task_operation_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{operation}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Search Query Latency",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(search_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "p50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(search_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(search_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "p99"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Filter & Sort Query Latency",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(filter_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "Filter p95"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(sort_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "Sort p95"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Task Operations by Status",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (status) (task_operations_total)",
+            "legendFormat": "{{status}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 6,
+        "title": "Task Operations by Type",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (operation) (task_operations_total)",
+            "legendFormat": "{{operation}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      }
+    ],
+    "refresh": "10s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    }
+  }
+}

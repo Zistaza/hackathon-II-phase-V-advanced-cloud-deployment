@@ -1,0 +1,62 @@
+# Kafka Topic Configurations for Phase-V Todo Chatbot
+# These topics handle task lifecycle events, reminders, and real-time updates
+
+topics:
+  # Task lifecycle events (created, updated, completed, deleted)
+  - name: task-events
+    partitions: 10
+    replication-factor: 3
+    config:
+      retention.ms: 604800000  # 7 days
+      cleanup.policy: delete
+      compression.type: snappy
+      min.insync.replicas: 2
+    description: "All task CRUD operations and completion events"
+    consumers:
+      - recurring-task-service
+      - audit-service
+      - monitoring-service
+
+  # Reminder trigger events
+  - name: reminders
+    partitions: 10
+    replication-factor: 3
+    config:
+      retention.ms: 86400000  # 1 day
+      cleanup.policy: delete
+      compression.type: snappy
+      min.insync.replicas: 2
+    description: "Reminder triggers published by Dapr Jobs API"
+    consumers:
+      - notification-service
+
+  # Real-time task updates for multi-client sync
+  - name: task-updates
+    partitions: 10
+    replication-factor: 3
+    config:
+      retention.ms: 3600000  # 1 hour (short-lived for real-time sync)
+      cleanup.policy: delete
+      compression.type: snappy
+      min.insync.replicas: 2
+    description: "Real-time task state changes for client synchronization"
+    consumers:
+      - websocket-service
+
+# Kafka cluster configuration (local development)
+local:
+  bootstrap-servers: "localhost:9092"
+  zookeeper: "localhost:2181"
+
+# Kafka cluster configuration (production)
+production:
+  bootstrap-servers: "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092"
+  zookeeper: "zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181"
+  security:
+    protocol: SASL_SSL
+    mechanism: SCRAM-SHA-512
+
+# Topic creation commands (for reference)
+# kafka-topics.sh --create --topic task-events --partitions 10 --replication-factor 3 --bootstrap-server localhost:9092
+# kafka-topics.sh --create --topic reminders --partitions 10 --replication-factor 3 --bootstrap-server localhost:9092
+# kafka-topics.sh --create --topic task-updates --partitions 10 --replication-factor 3 --bootstrap-server localhost:9092

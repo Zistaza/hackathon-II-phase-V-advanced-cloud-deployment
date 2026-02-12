@@ -1,0 +1,122 @@
+# Default values for todo-app
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 3
+
+image:
+  repository: todo-api
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  dapr.io/enabled: "true"
+  dapr.io/app-id: "todo-api"
+  dapr.io/app-port: "8000"
+  dapr.io/log-level: "info"
+  dapr.io/enable-metrics: "true"
+  dapr.io/metrics-port: "9090"
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: todo.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Database configuration
+database:
+  secretName: postgres-secrets
+  connectionString: ""
+
+# JWT configuration
+jwt:
+  secretName: jwt-secrets
+  secret: ""
+
+# Recurring Task Service configuration
+recurringTaskService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: recurring-task-service
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  logLevel: "info"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+# Notification Service configuration
+notificationService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: notification-service
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  logLevel: "info"
+  smtp:
+    enabled: false
+    secretName: smtp-secrets
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+# Kafka configuration
+kafka:
+  brokers: "kafka:9092"
+  secretName: kafka-secrets
+
+# Dapr configuration
+dapr:
+  enabled: true
+  logLevel: "info"
+  metricsEnabled: true
+
+# Monitoring configuration
+monitoring:
+  prometheus:
+    enabled: true
+    port: 9090
+  grafana:
+    enabled: true
+
+# Environment
+environment: production

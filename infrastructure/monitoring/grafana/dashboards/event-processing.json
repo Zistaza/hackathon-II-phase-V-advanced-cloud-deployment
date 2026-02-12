@@ -1,0 +1,98 @@
+{
+  "dashboard": {
+    "title": "Event Processing Dashboard",
+    "tags": ["phase-v", "events"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Events Published per Second",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(events_published_total[5m])",
+            "legendFormat": "{{event_type}} → {{topic}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Events Consumed per Second",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(events_consumed_total[5m])",
+            "legendFormat": "{{event_type}} by {{consumer}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Event Processing Duration (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(event_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{event_type}} - {{consumer}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Event Processing Errors",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(event_processing_errors_total[5m])",
+            "legendFormat": "{{event_type}} - {{error_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Consumer Lag",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "consumer_lag_messages",
+            "legendFormat": "{{consumer}} - {{topic}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 6,
+        "title": "Dead Letter Queue Messages",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(dlq_messages_total[5m])",
+            "legendFormat": "{{topic}} - {{reason}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      },
+      {
+        "id": 7,
+        "title": "Event Processing Error Rate",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "sum(rate(event_processing_errors_total[5m])) / sum(rate(events_consumed_total[5m])) * 100"
+          }
+        ],
+        "format": "percent",
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 24}
+      }
+    ],
+    "refresh": "10s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    }
+  }
+}
