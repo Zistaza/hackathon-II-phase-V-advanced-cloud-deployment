@@ -1,0 +1,182 @@
+groups:
+  - name: phase_v_alerts
+    interval: 30s
+    rules:
+      # Search performance alerts
+      - alert: SearchLatencyHigh
+        expr: histogram_quantile(0.95, rate(search_query_duration_seconds_bucket[5m])) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          component: search
+        annotations:
+          summary: "Search query latency is high"
+          description: "Search p95 latency is {{ $value }}s (threshold: 1s)"
+
+      - alert: SearchLatencyCritical
+        expr: histogram_quantile(0.95, rate(search_query_duration_seconds_bucket[5m])) > 2.0
+        for: 5m
+        labels:
+          severity: critical
+          component: search
+        annotations:
+          summary: "Search query latency is critically high"
+          description: "Search p95 latency is {{ $value }}s (threshold: 2s)"
+
+      # Event processing alerts
+      - alert: EventProcessingErrorRateHigh
+        expr: sum(rate(event_processing_errors_total[5m])) / sum(rate(events_consumed_total[5m])) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          component: events
+        annotations:
+          summary: "Event processing error rate is high"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 1%)"
+
+      - alert: EventProcessingErrorRateCritical
+        expr: sum(rate(event_processing_errors_total[5m])) / sum(rate(events_consumed_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: events
+        annotations:
+          summary: "Event processing error rate is critically high"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      # Reminder alerts
+      - alert: ReminderDeliveryFailureRateHigh
+        expr: sum(rate(reminders_triggered_total{status="error"}[5m])) / sum(rate(reminders_triggered_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: reminders
+        annotations:
+          summary: "Reminder delivery failure rate is high"
+          description: "Failure rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      - alert: ReminderDeliveryFailureRateCritical
+        expr: sum(rate(reminders_triggered_total{status="error"}[5m])) / sum(rate(reminders_triggered_total[5m])) > 0.10
+        for: 5m
+        labels:
+          severity: critical
+          component: reminders
+        annotations:
+          summary: "Reminder delivery failure rate is critically high"
+          description: "Failure rate is {{ $value | humanizePercentage }} (threshold: 10%)"
+
+      - alert: ReminderSchedulingErrors
+        expr: rate(reminder_scheduling_errors_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: reminders
+        annotations:
+          summary: "Reminder scheduling errors detected"
+          description: "Scheduling error rate is {{ $value }} errors/sec"
+
+      # Consumer lag alerts
+      - alert: ConsumerLagHigh
+        expr: consumer_lag_messages > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: events
+        annotations:
+          summary: "Consumer lag is high for {{ $labels.consumer }}"
+          description: "Lag is {{ $value }} messages on topic {{ $labels.topic }}"
+
+      - alert: ConsumerLagCritical
+        expr: consumer_lag_messages > 5000
+        for: 5m
+        labels:
+          severity: critical
+          component: events
+        annotations:
+          summary: "Consumer lag is critically high for {{ $labels.consumer }}"
+          description: "Lag is {{ $value }} messages on topic {{ $labels.topic }}"
+
+      # Dead letter queue alerts
+      - alert: DLQMessagesDetected
+        expr: rate(dlq_messages_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: events
+        annotations:
+          summary: "Messages being sent to DLQ"
+          description: "{{ $value }} messages/sec sent to DLQ for topic {{ $labels.topic }}"
+
+      - alert: DLQMessagesHigh
+        expr: rate(dlq_messages_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: critical
+          component: events
+        annotations:
+          summary: "High rate of messages to DLQ"
+          description: "{{ $value }} messages/sec sent to DLQ for topic {{ $labels.topic }}"
+
+      # Service health alerts
+      - alert: ServiceDown
+        expr: up{job=~"todo-api|recurring-task-service|notification-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service has been down for more than 1 minute"
+
+      - alert: ServiceRestartingFrequently
+        expr: rate(kube_pod_container_status_restarts_total{pod=~"todo-.*"}[15m]) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Pod {{ $labels.pod }} is restarting frequently"
+          description: "Pod has restarted {{ $value }} times in the last 15 minutes"
+
+      # WebSocket alerts
+      - alert: WebSocketConnectionsHigh
+        expr: websocket_connections_active > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: websocket
+        annotations:
+          summary: "High number of WebSocket connections"
+          description: "{{ $value }} active connections (consider scaling)"
+
+      - alert: TaskSyncLatencyHigh
+        expr: histogram_quantile(0.95, rate(task_sync_latency_seconds_bucket[5m])) > 2.0
+        for: 5m
+        labels:
+          severity: warning
+          component: websocket
+        annotations:
+          summary: "Task sync latency is high"
+          description: "p95 sync latency is {{ $value }}s (threshold: 2s)"
+
+      # Recurring task alerts
+      - alert: RecurringTaskGenerationFailures
+        expr: sum(rate(recurring_tasks_generated_total{status="error"}[5m])) / sum(rate(recurring_tasks_generated_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: recurring-tasks
+        annotations:
+          summary: "Recurring task generation failure rate is high"
+          description: "Failure rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      # Database connection alerts
+      - alert: DatabaseConnectionPoolExhausted
+        expr: sqlalchemy_pool_size - sqlalchemy_pool_checked_out_connections < 2
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Only {{ $value }} connections available in pool"
