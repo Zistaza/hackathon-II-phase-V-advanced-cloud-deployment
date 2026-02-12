@@ -85,7 +85,7 @@
 ### Functional Requirements
 
 - **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
-- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
+- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]
 - **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
 - **FR-005**: System MUST [behavior, e.g., "log all security events"]
@@ -94,6 +94,20 @@
 
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
 - **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
+
+### Event-Driven Requirements *(if feature involves state changes)*
+
+- **ER-001**: System MUST emit [event_name] event when [state change occurs]
+- **ER-002**: System MUST consume [event_name] event to [trigger action]
+- **ER-003**: Event handlers MUST be idempotent using event_id for deduplication
+- **ER-004**: All events MUST include: event_id, event_type, user_id, timestamp, payload
+
+### Dapr Integration Requirements *(if feature uses Dapr)*
+
+- **DR-001**: Feature MUST use Dapr Pub/Sub for [specific event flow]
+- **DR-002**: Feature MUST use Dapr State Store for [specific state management]
+- **DR-003**: Feature MUST use Dapr Jobs API for [specific scheduling needs]
+- **DR-004**: Feature MUST use Dapr Secrets for [specific secret management]
 
 ### Key Entities *(include if feature involves data)*
 

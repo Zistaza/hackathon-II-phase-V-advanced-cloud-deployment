@@ -31,7 +31,41 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+### Event-Driven Architecture Compliance
+- [ ] All state changes emit events to appropriate Kafka topics (task-events, reminders, task-updates)
+- [ ] Event schemas include: event_id, event_type, user_id, timestamp, payload
+- [ ] No direct service-to-service API calls (use events or Dapr Service Invocation)
+
+### Dapr Integration Compliance
+- [ ] Pub/Sub component configured for Kafka/Redpanda
+- [ ] State Management component configured for Postgres/Neon DB
+- [ ] Jobs API configured for reminder scheduling
+- [ ] Secrets Management configured (no hardcoded secrets)
+- [ ] Service Invocation configured with mTLS
+
+### Security & Multi-Tenancy Compliance
+- [ ] All endpoints require JWT authentication
+- [ ] All database queries filtered by authenticated user_id
+- [ ] All event handlers validate user ownership
+- [ ] Service-to-service communication authenticated (JWT/API keys/RBAC)
+
+### Advanced Features Compliance
+- [ ] Recurring tasks: task.completed events trigger next instance creation
+- [ ] Due dates & reminders: Dapr Jobs API schedules reminder triggers
+- [ ] Priorities, tags, search, filter, sort: indexed queries only
+
+### Deployment & Observability Compliance
+- [ ] Works on Minikube (local) before cloud deployment
+- [ ] Helm charts with parameterized values.yaml
+- [ ] Prometheus metrics and Grafana dashboards configured
+- [ ] Centralized logging (Loki/OpenSearch) configured
+- [ ] CI/CD pipeline automated (GitHub Actions)
+
+### Validation & Error Prevention Compliance
+- [ ] All event handlers are idempotent (use event_id for deduplication)
+- [ ] Schema validation at event publish and consume
+- [ ] Strict type checking with Pydantic models
+- [ ] Exception handling with retry logic and dead-letter queues
 
 ## Project Structure
 

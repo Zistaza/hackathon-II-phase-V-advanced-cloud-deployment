@@ -69,6 +69,19 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] T008 Configure error handling and logging infrastructure
 - [ ] T009 Setup environment configuration management
 
+**Phase V Event-Driven & Dapr Infrastructure** (if applicable):
+
+- [ ] T010 [P] Configure Kafka/Redpanda topics (task-events, reminders, task-updates)
+- [ ] T011 [P] Configure Dapr Pub/Sub component for message broker
+- [ ] T012 [P] Configure Dapr State Store component for Postgres/Neon DB
+- [ ] T013 [P] Configure Dapr Jobs API component for reminder scheduling
+- [ ] T014 [P] Configure Dapr Secrets component for secret management
+- [ ] T015 [P] Configure Dapr Service Invocation with mTLS
+- [ ] T016 Create base event schemas with Pydantic models (event_id, event_type, user_id, timestamp, payload)
+- [ ] T017 Implement idempotent event handler base class with event_id deduplication
+- [ ] T018 Setup Prometheus metrics collection and Grafana dashboards
+- [ ] T019 Setup centralized logging (Loki/OpenSearch) with correlation IDs
+
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
 ---
