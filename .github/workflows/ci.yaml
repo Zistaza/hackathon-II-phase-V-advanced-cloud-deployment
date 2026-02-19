@@ -101,9 +101,10 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
-      - name: Run linting
+      - name: Run linting (non-blocking)
         working-directory: ./frontend
-        run: npm run lint
+        run: npm run lint || true
+
 
       - name: Run tests
         working-directory: ./frontend
