@@ -1,0 +1,24 @@
+name: Docker Build - Reminder Scheduler
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/src/services/**'
+      - '.github/workflows/docker-reminder-scheduler.yaml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/src/services/**'
+  release:
+    types: [published]
+
+jobs:
+  build-reminder-scheduler:
+    name: Build Reminder Scheduler Image
+    uses: ./.github/workflows/reusable-docker-build.yaml
+    with:
+      service-name: reminder-scheduler
+      context-path: ./backend
+      dockerfile: ./backend/Dockerfile.reminder-scheduler
+      platforms: linux/amd64

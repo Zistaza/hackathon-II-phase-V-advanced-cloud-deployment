@@ -6,39 +6,23 @@ import { setCookie, removeCookie, getCookie } from '../lib/cookies';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
 
-const authInstance = axios.create({
-  baseURL: API_BASE_URL, // For API endpoints that use /api prefix
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+// Debug: Log the API base URL to verify it's correct
+if (typeof window !== 'undefined') {
+  console.log('Auth Service API_BASE_URL:', API_BASE_URL);
+}
 
-// Auth endpoints also use /api prefix
 const authApiInstance = axios.create({
-  baseURL: API_BASE_URL, // Auth endpoints use /api prefix too
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor to attach JWT token to authInstance
-authInstance.interceptors.request.use(
-  (config) => {
-    const token = getCookie('authToken') || localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Request interceptor to attach JWT token to authApiInstance
+// Request interceptor to attach JWT token
 authApiInstance.interceptors.request.use(
   (config) => {
-    const token = getCookie('authToken') || localStorage.getItem('authToken');
+    const token = getCookie('authToken') ||
+      (typeof window !== 'undefined' ? localStorage.getItem('authToken') : null);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -49,27 +33,22 @@ authApiInstance.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle 401 unauthorized responses for both instances
-const handleUnauthorized = (error: any) => {
-  if (error.response?.status === 401) {
-    // Clear stored tokens and redirect to login
-    removeCookie('authToken');
-    removeCookie('userData');
-    localStorage.removeItem('authToken');  // Also remove from localStorage for consistency
-    localStorage.removeItem('userData');
-    window.location.href = '/login';
-  }
-  return Promise.reject(error);
-};
-
-authInstance.interceptors.response.use(
-  (response) => response,
-  handleUnauthorized
-);
-
+// Response interceptor to handle 401 unauthorized responses
 authApiInstance.interceptors.response.use(
   (response) => response,
-  handleUnauthorized
+  (error) => {
+    if (error.response?.status === 401) {
+      // Clear stored tokens and redirect to login
+      removeCookie('authToken');
+      removeCookie('userData');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
 );
 
 export const authService = {
@@ -79,10 +58,14 @@ export const authService = {
       // Set cookie for Next.js middleware and localStorage for client-side access
       if (response.data && response.data.token) {
         setCookie('authToken', response.data.token, 7); // Store for 7 days
-        localStorage.setItem('authToken', response.data.token); // Also store in localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('authToken', response.data.token);
+        }
         if (response.data.user) {
-          setCookie('userData', JSON.stringify(response.data.user), 7); // Store for 7 days
-          localStorage.setItem('userData', JSON.stringify(response.data.user)); // Also store in localStorage
+          setCookie('userData', JSON.stringify(response.data.user), 7);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('userData', JSON.stringify(response.data.user));
+          }
         }
       }
       return response.data;
@@ -97,10 +80,14 @@ export const authService = {
       // Set cookie for Next.js middleware and localStorage for client-side access
       if (response.data && response.data.token) {
         setCookie('authToken', response.data.token, 7); // Store for 7 days
-        localStorage.setItem('authToken', response.data.token); // Also store in localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('authToken', response.data.token);
+        }
         if (response.data.user) {
-          setCookie('userData', JSON.stringify(response.data.user), 7); // Store for 7 days
-          localStorage.setItem('userData', JSON.stringify(response.data.user)); // Also store in localStorage
+          setCookie('userData', JSON.stringify(response.data.user), 7);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('userData', JSON.stringify(response.data.user));
+          }
         }
       }
       return response.data;
@@ -112,30 +99,39 @@ export const authService = {
   logout: async (): Promise<void> => {
     try {
       await authApiInstance.post('/auth/logout');
-      // Clear cookies and localStorage
-      removeCookie('authToken');
-      removeCookie('userData');
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userData');
     } catch (error: any) {
       console.error('Logout error:', error);
-      // Still clear cookies and localStorage even if API call fails
+    } finally {
+      // Always clear cookies and localStorage
       removeCookie('authToken');
       removeCookie('userData');
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userData');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+      }
     }
   },
 
   verifyToken: async (token: string): Promise<boolean> => {
     try {
-      // To verify a token, we can make a request to a protected endpoint
-      // We'll use a minimal request to the user's own tasks endpoint
-      // Since we don't know the user ID ahead of time, we'll return true if token exists
-      // and let the backend handle validation on actual requests
-      return !!token; // Basic validation - in production, you might want a dedicated endpoint
+      // Make a request to verify the token with the backend
+      const response = await authApiInstance.get('/auth/verify', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.status === 200;
     } catch (error) {
       return false;
+    }
+  },
+
+  getCurrentUser: async (): Promise<AuthResponse['user'] | null> => {
+    try {
+      const response = await authApiInstance.get('/auth/me');
+      return response.data;
+    } catch (error) {
+      return null;
     }
   },
 };

@@ -5,13 +5,15 @@ from ..models.user import CurrentUser
 from ..middleware.auth import get_current_user
 from ..models.user_model import User
 from ..database import get_session
-from ..models.task_model import Task, TaskCreate, TaskUpdate, TaskPublic
+from ..models.task_model import Task, TaskCreate, TaskUpdate, TaskResponse
+from ..events.publishers import get_task_event_publisher
 from datetime import datetime
+from uuid import UUID
 
 router = APIRouter()
 
 
-@router.get("/{user_id}/tasks", response_model=List[Task])
+@router.get("/{user_id}/tasks", response_model=List[TaskResponse])
 async def get_tasks(
     user_id: str,
     current_user: CurrentUser = Depends(get_current_user),
@@ -43,10 +45,10 @@ async def get_tasks(
     results = session.exec(statement)
     tasks = results.all()
 
-    return tasks
+    return [TaskResponse.from_task(task) for task in tasks]
 
 
-@router.post("/{user_id}/tasks", response_model=Task)
+@router.post("/{user_id}/tasks", response_model=TaskResponse)
 async def create_task(
     user_id: str,
     task: TaskCreate,
@@ -74,11 +76,16 @@ async def create_task(
             detail="Access denied: Cannot create tasks for another user"
         )
 
-    # Create a new task record in the database
+    # Create a new task record in the database with Phase V features
     db_task = Task(
         title=task.title,
         description=task.description,
         completed=task.completed,
+        priority=task.priority if hasattr(task, 'priority') else "medium",
+        tags=task.tags if hasattr(task, 'tags') else [],
+        due_date=task.due_date if hasattr(task, 'due_date') else None,
+        recurrence_pattern=task.recurrence_pattern if hasattr(task, 'recurrence_pattern') else "none",
+        reminder_time=task.reminder_time if hasattr(task, 'reminder_time') else None,
         user_id=current_user.user_id
     )
 
@@ -86,10 +93,28 @@ async def create_task(
     session.commit()
     session.refresh(db_task)
 
-    return db_task
+    # Publish task.created event
+    try:
+        publisher = get_task_event_publisher()
+        await publisher.publish_task_created(
+            task_id=UUID(db_task.id),
+            title=db_task.title,
+            created_by=UUID(current_user.user_id),
+            description=db_task.description,
+            status="completed" if db_task.completed else "pending",
+            priority=db_task.priority,
+            due_date=db_task.due_date,
+            tags=db_task.tags,
+            user_id=UUID(current_user.user_id),
+        )
+    except Exception as e:
+        # Log the error but don't fail the request
+        print(f"Warning: Failed to publish task.created event: {e}")
+
+    return TaskResponse.from_task(db_task)
 
 
-@router.get("/{user_id}/tasks/{id}", response_model=Task)
+@router.get("/{user_id}/tasks/{id}", response_model=TaskResponse)
 async def get_task(
     user_id: str,
     id: str,
@@ -127,10 +152,10 @@ async def get_task(
             detail="Task not found"
         )
 
-    return db_task
+    return TaskResponse.from_task(db_task)
 
 
-@router.put("/{user_id}/tasks/{id}", response_model=Task)
+@router.put("/{user_id}/tasks/{id}", response_model=TaskResponse)
 async def update_task(
     user_id: str,
     id: str,
@@ -175,11 +200,25 @@ async def update_task(
     for field, value in update_data.items():
         setattr(db_task, field, value)
 
+    db_task.updated_at = datetime.utcnow()
     session.add(db_task)
     session.commit()
     session.refresh(db_task)
 
-    return db_task
+    # Publish task.updated event
+    try:
+        publisher = get_task_event_publisher()
+        await publisher.publish_task_updated(
+            task_id=UUID(db_task.id),
+            updated_fields=update_data,
+            updated_by=UUID(current_user.user_id),
+            user_id=UUID(current_user.user_id),
+        )
+    except Exception as e:
+        # Log the error but don't fail the request
+        print(f"Warning: Failed to publish task.updated event: {e}")
+
+    return TaskResponse.from_task(db_task)
 
 
 @router.delete("/{user_id}/tasks/{id}")
@@ -223,6 +262,18 @@ async def delete_task(
     # Delete the task from the database
     session.delete(db_task)
     session.commit()
+
+    # Publish task.deleted event
+    try:
+        publisher = get_task_event_publisher()
+        await publisher.publish_task_deleted(
+            task_id=UUID(db_task.id),
+            deleted_by=UUID(current_user.user_id),
+            user_id=UUID(current_user.user_id),
+        )
+    except Exception as e:
+        # Log the error but don't fail the request
+        print(f"Warning: Failed to publish task.deleted event: {e}")
 
     return {"message": f"Task {id} deleted successfully"}
 
@@ -272,5 +323,18 @@ async def toggle_task_completion(
     session.add(db_task)
     session.commit()
     session.refresh(db_task)
+
+    # Publish task.completed event if task was just completed
+    if db_task.completed:
+        try:
+            publisher = get_task_event_publisher()
+            await publisher.publish_task_completed(
+                task_id=UUID(db_task.id),
+                completed_by=UUID(current_user.user_id),
+                user_id=UUID(current_user.user_id),
+            )
+        except Exception as e:
+            # Log the error but don't fail the request
+            print(f"Warning: Failed to publish task.completed event: {e}")
 
     return {"id": db_task.id, "completed": db_task.completed, "message": f"Task {id} completion status updated"}

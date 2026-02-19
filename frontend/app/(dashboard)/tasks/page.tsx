@@ -30,78 +30,74 @@ export default function TasksPage() {
   });
 
   return (
-    <section className="flex justify-center px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+    <section className="flex justify-center px-4 sm:px-6 lg:px-8 py-12">
       <div className="w-full max-w-5xl">
 
         {/* ===== Header ===== */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-16"
+          transition={{ duration: 0.3 }}
+          className="mb-12"
         >
           {/* Title + Subtitle */}
           <div className="text-center lg:text-left mb-8">
-            <h1 className="text-4xl sm:text-5xl font-bold text-primary mb-3">
+            <h1 className="text-3xl sm:text-4xl font-bold text-primary mb-2">
               My Tasks
             </h1>
-            <p className="text-muted-foreground text-lg sm:text-xl">
+            <p className="text-muted-foreground text-base sm:text-lg">
               Manage your daily activities efficiently
             </p>
           </div>
 
           {/* ===== Action Buttons ===== */}
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
             {/* Left: Back to Home */}
-            <div className="flex justify-center sm:justify-start w-full sm:w-auto">
-              <Link href="/">
-                <AnimatedButton
-                  variant="outline"
-                  size="md"
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl"
-                >
-                  <FiHome className="w-4 h-4" />
-                  Back to Home
-                </AnimatedButton>
-              </Link>
-            </div>
+            <Link href="/">
+              <AnimatedButton
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-2 px-4 rounded-lg text-muted-foreground hover:text-foreground"
+              >
+                <FiHome className="w-4 h-4" />
+                Back to Home
+              </AnimatedButton>
+            </Link>
 
-            {/* Right: Create Task */}
-            <div className="flex justify-center sm:justify-end w-full sm:w-auto">
-              <Link href="/tasks/create">
-                <AnimatedButton
-                  variant="primary"
-                  size="md"
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl"
-                >
-                  <FiPlus className="w-4 h-4" />
-                  Create Task
-                </AnimatedButton>
-              </Link>
-            </div>
+            {/* Right: Create Task - Primary Action */}
+            <Link href="/tasks/create">
+              <AnimatedButton
+                variant="primary"
+                size="lg"
+                className="flex items-center gap-2 px-8 rounded-lg text-base font-semibold shadow-md hover:shadow-lg"
+              >
+                <FiPlus className="w-5 h-5" />
+                Create Task
+              </AnimatedButton>
+            </Link>
           </div>
 
           {/* ===== Filters ===== */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-6 justify-center lg:justify-start">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Filter label */}
-            <div className="flex items-center gap-3 text-muted-foreground mb-2 sm:mb-0">
-              <FiFilter className="w-5 h-5" />
-              <span className="text-sm sm:text-base font-medium">Filter</span>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <FiFilter className="w-4 h-4" />
+              <span className="text-sm font-medium">Filter:</span>
             </div>
 
             {/* Filter buttons */}
-            <div className="flex flex-wrap justify-center sm:justify-start bg-muted rounded-xl p-3 gap-4">
+            <div className="flex flex-wrap gap-4 bg-muted/50 rounded-lg p-2">
               {(['all', 'active', 'completed'] as const).map(option => (
                 <button
                   key={option}
                   onClick={() => setFilter(option)}
-                  className={`px-6 py-3 rounded-lg text-sm sm:text-base font-medium transition ${
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                     filter === option
-                      ? 'bg-background text-primary shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
                   }`}
                 >
-                  {option}
+                  {option.charAt(0).toUpperCase() + option.slice(1)}
                 </button>
               ))}
             </div>
@@ -109,15 +105,15 @@ export default function TasksPage() {
         </motion.div>
 
         {/* ===== Task List Card ===== */}
-        <Card className="border shadow-lg rounded-2xl mt-12 sm:mt-16">
-          <CardHeader className="pt-6 pb-4 sm:pt-8 sm:pb-6">
-            <CardTitle className="flex items-center justify-center gap-2 text-xl sm:text-2xl">
+        <Card className="border shadow-lg rounded-xl">
+          <CardHeader className="p-6">
+            <CardTitle className="flex items-center justify-center gap-2 text-xl">
               <FiCheckSquare className="text-primary" />
               Your Tasks
             </CardTitle>
           </CardHeader>
 
-          <CardContent className="pt-6 sm:pt-8 pb-8 sm:pb-10">
+          <CardContent className="p-6 pt-0">
             <TaskList
               tasks={filteredTasks}
               loading={state.loading}
@@ -127,12 +123,12 @@ export default function TasksPage() {
             />
 
             {state.error && (
-              <div className="mt-8 p-5 sm:p-6 border border-destructive rounded-xl">
+              <div className="mt-6 p-4 border border-destructive rounded-lg">
                 <p className="text-destructive text-sm mb-4">{state.error}</p>
                 <AnimatedButton
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg"
+                  className="flex items-center gap-2 px-4 rounded-lg"
                   onClick={fetchTasks}
                 >
                   <FiRefreshCw className="w-4 h-4" />

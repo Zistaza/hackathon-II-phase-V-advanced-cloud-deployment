@@ -4,7 +4,7 @@
  * Supports real-time updates via WebSocket
  */
 import React from 'react';
-import { Task } from '../types/task';
+import { Task } from '../../types';
 import { useTaskSync } from '../hooks/useTaskSync';
 
 interface TaskMessageProps {
@@ -31,13 +31,17 @@ const TaskMessage: React.FC<TaskMessageProps> = ({
 
   // Use synced task data if available, otherwise use prop
   const displayTask = syncedTask;
-  // Priority badge colors
-  const priorityColors = {
+
+  // Priority badge colors with default fallback
+  const priorityColors: Record<string, string> = {
     urgent: 'bg-red-500 text-white',
     high: 'bg-orange-500 text-white',
     medium: 'bg-yellow-500 text-gray-900',
     low: 'bg-gray-400 text-gray-900'
   };
+
+  const priority = displayTask.priority || 'low';
+  const priorityColor = priorityColors[priority] || priorityColors.low;
 
   // Format due date
   const formatDueDate = (dueDate: string | null) => {
@@ -70,8 +74,8 @@ const TaskMessage: React.FC<TaskMessageProps> = ({
         <h3 className="text-lg font-semibold flex-1">{displayTask.title}</h3>
 
         {/* Priority Badge */}
-        <span className={`px-2 py-1 rounded text-xs font-medium ${priorityColors[displayTask.priority]}`}>
-          {displayTask.priority.toUpperCase()}
+        <span className={`px-2 py-1 rounded text-xs font-medium ${priorityColor}`}>
+          {displayTask.priority?.toUpperCase() || 'LOW'}
         </span>
       </div>
 
@@ -118,20 +122,17 @@ const TaskMessage: React.FC<TaskMessageProps> = ({
 
         {/* Status */}
         <span className={`px-2 py-1 rounded text-xs ${
-          displayTask.status === 'complete'
+          displayTask.completed
             ? 'bg-green-100 text-green-800'
             : 'bg-gray-100 text-gray-800'
         }`}>
-          {displayTask.status === 'complete' ? '✓ Complete' : 'Incomplete'}
+          {displayTask.completed ? '✓ Complete' : 'Incomplete'}
         </span>
       </div>
 
       {/* Timestamps */}
       <div className="mt-2 text-xs text-gray-500">
         Created: {new Date(displayTask.created_at).toLocaleDateString()}
-        {displayTask.completed_at && (
-          <> • Completed: {new Date(displayTask.completed_at).toLocaleDateString()}</>
-        )}
       </div>
     </div>
   );

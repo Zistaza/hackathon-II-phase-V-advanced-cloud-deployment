@@ -6,7 +6,9 @@ import { Button } from '../ui/button';
 import AnimatedButton from '../ui/animated-button';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FiEdit2, FiTrash2, FiCheck, FiCalendar } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiCheck, FiStar, FiHeart, FiZap, FiTarget, FiAward, FiTrendingUp, FiCoffee, FiSun, FiMoon, FiCloud } from 'react-icons/fi';
+import { TaskBadges } from './task-badges';
+import { TaskMetadata } from './task-metadata';
 
 interface TaskItemProps {
   task: Task;
@@ -14,6 +16,30 @@ interface TaskItemProps {
   onDelete: (id: string) => void;
   onEdit: (id: string) => void;
 }
+
+// Array of unique icons for tasks
+const taskIcons = [
+  FiStar,
+  FiHeart,
+  FiZap,
+  FiTarget,
+  FiAward,
+  FiTrendingUp,
+  FiCoffee,
+  FiSun,
+  FiMoon,
+  FiCloud,
+];
+
+// Hash function to deterministically assign an icon based on task ID
+const getTaskIcon = (taskId: string) => {
+  let hash = 0;
+  for (let i = 0; i < taskId.length; i++) {
+    hash = taskId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const IconComponent = taskIcons[Math.abs(hash) % taskIcons.length];
+  return IconComponent;
+};
 
 export const TaskItem: React.FC<TaskItemProps> = ({
   task,
@@ -25,28 +51,33 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
     : false;
 
+  const TaskIcon = getTaskIcon(task.id);
+
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      whileHover={{ scale: 0.98 }}
-      whileTap={{ scale: 0.96 }}
-      transition={{ duration: 0.3 }}
-      className={`group relative rounded-2xl border btn-enhanced ${
+      transition={{ duration: 0.2 }}
+      whileHover={!prefersReducedMotion ? {
+        scale: 1.03,
+        y: -6,
+        transition: { duration: 0.3, ease: "easeOut" }
+      } : {}}
+      className={`group relative rounded-xl border-2 transition-all duration-300 ${
         task.completed
-          ? 'bg-muted/50 border-primary/30 shadow-sm hover:shadow-md hover:border-primary/40'
-          : 'bg-card border-primary/20 shadow-sm hover:shadow-lg hover:border-primary/30'
+          ? 'bg-muted/30 dark:bg-gray-800/50 border-border hover:shadow-2xl hover:bg-muted/60 dark:hover:bg-gray-800/80 hover:border-primary/30'
+          : 'bg-card dark:bg-gray-900 border-border hover:shadow-2xl hover:bg-primary/5 dark:hover:bg-primary/10 hover:border-primary/50'
       }`}
     >
-      <div className="p-6">
-        <div className="flex items-start justify-between gap-6">
-          <div className="flex items-start space-x-6 flex-1 min-w-0">
+      <div className="p-8">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start space-x-4 flex-1 min-w-0">
             <motion.button
               whileTap={!prefersReducedMotion ? { scale: 0.9 } : {}}
               onClick={() => onToggleCompletion(task.id)}
-              className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center mt-1 transition-all duration-200 ${
+              className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center mt-1 transition-colors duration-200 ${
                 task.completed
                   ? 'bg-primary border-primary text-white'
                   : 'border-input hover:border-primary'
@@ -57,9 +88,8 @@ export const TaskItem: React.FC<TaskItemProps> = ({
                 <motion.svg
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  exit={{ scale: 0 }}
-                  width="16"
-                  height="16"
+                  width="12"
+                  height="12"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -74,6 +104,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 mb-2">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center transition-all duration-300 group-hover:bg-primary/20 dark:group-hover:bg-primary/30 group-hover:scale-110">
+                  <TaskIcon className="w-5 h-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
+                </div>
                 <h3 className={`font-semibold text-lg ${
                   task.completed
                     ? 'line-through text-muted-foreground'
@@ -82,15 +115,15 @@ export const TaskItem: React.FC<TaskItemProps> = ({
                   {task.title}
                 </h3>
                 {task.completed && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary">
-                    <FiCheck className="w-4 h-4 mr-2" />
-                    Completed
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                    <FiCheck className="w-3 h-3 mr-1" />
+                    Done
                   </span>
                 )}
               </div>
 
               {task.description && (
-                <p className={`text-base mt-2 break-words ${
+                <p className={`text-base mb-3 break-words ${
                   task.completed
                     ? 'line-through text-muted-foreground'
                     : 'text-muted-foreground'
@@ -99,49 +132,39 @@ export const TaskItem: React.FC<TaskItemProps> = ({
                 </p>
               )}
 
-              <div className="flex flex-wrap items-center gap-6 mt-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <FiCalendar className="w-4 h-4" />
-                  <span>Created: {new Date(task.created_at).toLocaleDateString()}</span>
-                </div>
-                {task.completed && (
-                  <div className="flex items-center gap-2">
-                    <FiCheck className="w-4 h-4" />
-                    <span>Completed: {new Date(task.updated_at || task.created_at).toLocaleDateString()}</span>
-                  </div>
-                )}
+              <div className="mt-4">
+                <TaskBadges task={task} />
+              </div>
+
+              <div className="mt-5">
+                <TaskMetadata task={task} />
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 ml-6">
+          <div className="flex items-center gap-2">
             <Link href={`/tasks/${task.id}/edit`}>
               <AnimatedButton
                 variant="outline"
                 size="md"
-                className="h-12 w-12 p-0 hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/10 dark:hover:text-primary rounded-xl"
+                className="h-10 w-10 p-0 hover:bg-primary/10 hover:text-primary rounded-lg"
                 aria-label="Edit task"
               >
-                <FiEdit2 className="w-6 h-6" />
+                <FiEdit2 className="w-4 h-4" />
               </AnimatedButton>
             </Link>
             <AnimatedButton
               variant="outline"
               size="md"
-              className="h-12 w-12 p-0 hover:bg-destructive/10 hover:text-destructive border-destructive/20 dark:hover:bg-destructive/10 dark:hover:text-destructive dark:border-destructive/30 rounded-xl"
+              className="h-10 w-10 p-0 hover:bg-destructive/10 hover:text-destructive border-destructive/20 rounded-lg"
               onClick={() => onDelete(task.id)}
               aria-label="Delete task"
             >
-              <FiTrash2 className="w-6 h-6" />
+              <FiTrash2 className="w-4 h-4" />
             </AnimatedButton>
           </div>
         </div>
       </div>
-
-      {/* Progress indicator bar */}
-      {!task.completed && (
-        <div className="h-1.5 bg-gradient-to-r from-primary/20 to-transparent" />
-      )}
     </motion.div>
   );
 };

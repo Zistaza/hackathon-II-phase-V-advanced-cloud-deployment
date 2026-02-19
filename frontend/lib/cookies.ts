@@ -1,6 +1,8 @@
 // Cookie utility functions for client-side cookie handling
 
 export const setCookie = (name: string, value: string, days?: number) => {
+  if (typeof window === 'undefined') return;
+
   let expires = '';
   if (days) {
     const date = new Date();
@@ -11,6 +13,8 @@ export const setCookie = (name: string, value: string, days?: number) => {
 };
 
 export const getCookie = (name: string): string | null => {
+  if (typeof window === 'undefined') return null;
+
   const nameEQ = `${name}=`;
   const ca = document.cookie.split(';');
   for (let i = 0; i < ca.length; i++) {
@@ -22,5 +26,7 @@ export const getCookie = (name: string): string | null => {
 };
 
 export const removeCookie = (name: string) => {
+  if (typeof window === 'undefined') return;
+
   document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
 };

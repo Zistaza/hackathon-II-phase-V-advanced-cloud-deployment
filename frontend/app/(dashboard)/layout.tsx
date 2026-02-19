@@ -6,7 +6,6 @@ import { useAuth } from '../../contexts/auth-context';
 import { Header } from '../../components/navigation/header';
 import { TodoProvider } from '../../contexts/todo-context';
 import FloatingChatIcon from '../../components/FloatingChatIcon';
-import { useTheme } from '../../contexts/theme-context'; // Import useTheme to ensure theme is applied
 
 export default function DashboardLayout({
   children,
@@ -14,7 +13,6 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { state } = useAuth();
-  const { theme } = useTheme(); // Use theme to ensure it's applied
 
   // Show loading state while checking authentication
   // The middleware will handle redirecting unauthenticated users to login
@@ -45,7 +43,7 @@ export default function DashboardLayout({
 
   return (
     <TodoProvider>
-      <div className={`min-h-screen bg-background text-foreground ${theme}`}>
+      <div className="min-h-screen bg-background text-foreground">
         <Header />
         <main className="container mx-auto pt-20 sm:pt-24 px-4 sm:px-6 lg:px-8">
           {children}

@@ -1,0 +1,101 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: phase-v-backend
+  namespace: todo-app
+  labels:
+    app: phase-v-backend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: phase-v-backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phase-v-event-processor
+  namespace: todo-app
+  labels:
+    app: phase-v-event-processor
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8001
+    targetPort: 8001
+    protocol: TCP
+    name: http
+  selector:
+    app: phase-v-event-processor
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phase-v-reminder-scheduler
+  namespace: todo-app
+  labels:
+    app: phase-v-reminder-scheduler
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8002
+    targetPort: 8002
+    protocol: TCP
+    name: http
+  selector:
+    app: phase-v-reminder-scheduler
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phase-v-notification-service
+  namespace: todo-app
+  labels:
+    app: phase-v-notification-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8003
+    targetPort: 8003
+    protocol: TCP
+    name: http
+  selector:
+    app: phase-v-notification-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phase-v-websocket-service
+  namespace: todo-app
+  labels:
+    app: phase-v-websocket-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8004
+    targetPort: 8004
+    protocol: TCP
+    name: http
+  selector:
+    app: phase-v-websocket-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phase-v-frontend
+  namespace: todo-app
+  labels:
+    app: phase-v-frontend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: phase-v-frontend

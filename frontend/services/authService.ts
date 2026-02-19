@@ -85,6 +85,8 @@ class AuthService {
 
   // Helper method to set cookie
   private setCookie(name: string, value: string, days?: number) {
+    if (typeof window === 'undefined') return;
+
     let expires = '';
     if (days) {
       const date = new Date();
@@ -96,6 +98,8 @@ class AuthService {
 
   // Helper method to get cookie
   private getCookie(name: string): string | null {
+    if (typeof window === 'undefined') return null;
+
     const nameEQ = `${name}=`;
     const ca = document.cookie.split(';');
     for (let i = 0; i < ca.length; i++) {
@@ -108,6 +112,8 @@ class AuthService {
 
   // Helper method to remove cookie
   private removeCookie(name: string) {
+    if (typeof window === 'undefined') return;
+
     document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
   }
 
@@ -151,7 +157,7 @@ class AuthService {
 
     try {
       const payload = this.decodeToken(token);
-      return payload.userId || payload.sub || null;
+      return payload.userId || payload.user_id || payload.sub || null;
     } catch (error) {
       console.error('Error decoding token:', error);
       return null;

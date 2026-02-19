@@ -9,6 +9,16 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      spacing: {
+        '1': '4px',
+        '2': '8px',
+        '3': '12px',
+        '4': '16px',
+        '6': '24px',
+        '8': '32px',
+        '12': '48px',
+        '16': '64px',
+      },
       colors: {
         background: 'var(--background)',
         foreground: 'var(--foreground)',
@@ -32,6 +42,12 @@ const config: Config = {
         'sidebar-border': 'var(--sidebar-border)',
         'sidebar-accent': 'var(--sidebar-accent)',
         'sidebar-accent-foreground': 'var(--sidebar-accent-foreground)',
+        success: '#10b981',
+        'success-foreground': '#ffffff',
+        warning: '#f59e0b',
+        'warning-foreground': '#ffffff',
+        info: '#3b82f6',
+        'info-foreground': '#ffffff',
       },
       borderRadius: {
         DEFAULT: 'var(--radius)',

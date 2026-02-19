@@ -233,7 +233,7 @@
 - [X] T092 [US7] Implement JWT authentication for WebSocket connections in backend/src/api/websocket.py
 - [X] T093 [US7] Create WebSocket client in frontend/src/services/websocket.ts that connects to backend WebSocket endpoint
 - [X] T094 [US7] Create useTaskSync React hook in frontend/src/hooks/useTaskSync.ts that manages WebSocket connection and task list updates
-- [ ] T095 [US7] Update TaskMessage component in frontend/src/components/TaskMessage.tsx to use useTaskSync hook for real-time updates
+- [X] T095 [US7] Update TaskMessage component in frontend/src/components/TaskMessage.tsx to use useTaskSync hook for real-time updates
 - [X] T096 [US7] Implement task list update logic in frontend (add for task-created, update for task-updated, remove for task-deleted)
 - [X] T097 [US7] Handle WebSocket reconnection logic in frontend/src/services/websocket.ts with exponential backoff
 - [ ] T098 [US7] Verify multi-client sync latency meets <2s target from state change to display update

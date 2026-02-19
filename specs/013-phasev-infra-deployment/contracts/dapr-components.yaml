@@ -1,0 +1,650 @@
+# Dapr Components Configuration
+
+**Feature**: 013-phasev-infra-deployment
+**Date**: 2026-02-14
+**Version**: 1.0.0
+
+## Overview
+
+This document defines Dapr component configurations for local (Minikube) and cloud (Oracle Cloud) environments.
+
+---
+
+## Local Environment (Minikube)
+
+### Pub/Sub Component - Redis Streams
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+  namespace: todo-app
+spec:
+  type: pubsub.redis
+  version: v1
+  metadata:
+  - name: redisHost
+    value: redis-master.todo-app.svc.cluster.local:6379
+  - name: redisPassword
+    secretKeyRef:
+      name: redis-secret
+      key: password
+  - name: enableTLS
+    value: "false"
+  - name: consumerID
+    value: "{podName}"
+scopes:
+  - backend
+  - event-processor
+  - reminder-scheduler
+  - notification-service
+  - websocket-service
+```
+
+### State Store Component - PostgreSQL (Local)
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: todo-app
+spec:
+  type: state.postgresql
+  version: v1
+  metadata:
+  - name: connectionString
+    secretKeyRef:
+      name: postgres-secret
+      key: connectionString
+  - name: tableName
+    value: dapr_state
+  - name: metadataTableName
+    value: dapr_state_metadata
+  - name: cleanupIntervalInSeconds
+    value: "3600"
+  - name: actorStateStore
+    value: "false"
+scopes:
+  - event-processor
+  - reminder-scheduler
+```
+
+### Bindings Component - Cron (Reminder Scheduler)
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: reminder-cron
+  namespace: todo-app
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+  - name: schedule
+    value: "@every 1m"  # Check for due reminders every minute
+  - name: direction
+    value: "input"
+scopes:
+  - reminder-scheduler
+```
+
+### Secrets Component - Kubernetes Secrets
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: kubernetes-secrets
+  namespace: todo-app
+spec:
+  type: secretstores.kubernetes
+  version: v1
+  metadata:
+  - name: vaultName
+    value: todo-app
+  - name: defaultNamespace
+    value: todo-app
+scopes:
+  - backend
+  - event-processor
+  - reminder-scheduler
+  - notification-service
+```
+
+### Configuration - Tracing and Metrics
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: dapr-config
+  namespace: todo-app
+spec:
+  tracing:
+    samplingRate: "1"
+    zipkin:
+      endpointAddress: "http://zipkin.todo-app.svc.cluster.local:9411/api/v2/spans"
+  metric:
+    enabled: true
+  mtls:
+    enabled: true
+    workloadCertTTL: "24h"
+    allowedClockSkew: "15m"
+```
+
+---
+
+## Cloud Environment (Oracle Cloud)
+
+### Pub/Sub Component - Redpanda Cloud
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+  namespace: todo-app
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  - name: brokers
+    value: "seed-12345.redpanda.cloud:9092"
+  - name: authType
+    value: "password"
+  - name: saslUsername
+    secretKeyRef:
+      name: redpanda-secret
+      key: username
+  - name: saslPassword
+    secretKeyRef:
+      name: redpanda-secret
+      key: password
+  - name: maxMessageBytes
+    value: "1048576"  # 1MB
+  - name: consumerGroup
+    value: "{appID}"
+  - name: clientID
+    value: "{appID}-{podName}"
+  - name: authRequired
+    value: "true"
+  - name: initialOffset
+    value: "newest"
+  - name: version
+    value: "2.8.0"
+scopes:
+  - backend
+  - event-processor
+  - reminder-scheduler
+  - notification-service
+  - websocket-service
+```
+
+### State Store Component - PostgreSQL (Neon Cloud)
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: todo-app
+spec:
+  type: state.postgresql
+  version: v1
+  metadata:
+  - name: connectionString
+    secretKeyRef:
+      name: neon-secret
+      key: connectionString
+  - name: tableName
+    value: dapr_state
+  - name: metadataTableName
+    value: dapr_state_metadata
+  - name: cleanupIntervalInSeconds
+    value: "3600"
+  - name: actorStateStore
+    value: "false"
+  - name: timeout
+    value: "30"
+  - name: maxConns
+    value: "10"
+  - name: connectionMaxIdleTime
+    value: "5m"
+scopes:
+  - event-processor
+  - reminder-scheduler
+```
+
+### Bindings Component - Cron (Reminder Scheduler)
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: reminder-cron
+  namespace: todo-app
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+  - name: schedule
+    value: "@every 1m"  # Check for due reminders every minute
+  - name: direction
+    value: "input"
+scopes:
+  - reminder-scheduler
+```
+
+### Secrets Component - Kubernetes Secrets
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: kubernetes-secrets
+  namespace: todo-app
+spec:
+  type: secretstores.kubernetes
+  version: v1
+  metadata:
+  - name: vaultName
+    value: todo-app
+  - name: defaultNamespace
+    value: todo-app
+scopes:
+  - backend
+  - event-processor
+  - reminder-scheduler
+  - notification-service
+```
+
+### Configuration - Tracing and Metrics (Production)
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: dapr-config
+  namespace: todo-app
+spec:
+  tracing:
+    samplingRate: "0.1"  # 10% sampling in production
+    zipkin:
+      endpointAddress: "http://zipkin.todo-app.svc.cluster.local:9411/api/v2/spans"
+  metric:
+    enabled: true
+  mtls:
+    enabled: true
+    workloadCertTTL: "24h"
+    allowedClockSkew: "15m"
+  accessControl:
+    defaultAction: deny
+    trustDomain: "public"
+    policies:
+    - appId: backend
+      defaultAction: allow
+      trustDomain: "public"
+      namespace: "todo-app"
+    - appId: event-processor
+      defaultAction: allow
+      trustDomain: "public"
+      namespace: "todo-app"
+```
+
+---
+
+## Subscription Configuration
+
+### Task Events Subscription
+
+```yaml
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: task-events-subscription
+  namespace: todo-app
+spec:
+  pubsubname: pubsub
+  topic: task-events
+  routes:
+    default: /events/task
+  scopes:
+  - event-processor
+  - audit-service
+  - websocket-service
+  deadLetterTopic: dead-letter-queue
+  bulkSubscribe:
+    enabled: false
+```
+
+### Reminders Subscription
+
+```yaml
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: reminders-subscription
+  namespace: todo-app
+spec:
+  pubsubname: pubsub
+  topic: reminders
+  routes:
+    default: /events/reminder
+  scopes:
+  - notification-service
+  deadLetterTopic: dead-letter-queue
+  bulkSubscribe:
+    enabled: false
+```
+
+### Task Updates Subscription
+
+```yaml
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: task-updates-subscription
+  namespace: todo-app
+spec:
+  pubsubname: pubsub
+  topic: task-updates
+  routes:
+    default: /events/task-update
+  scopes:
+  - websocket-service
+  deadLetterTopic: dead-letter-queue
+  bulkSubscribe:
+    enabled: false
+```
+
+---
+
+## Resiliency Configuration
+
+### Retry Policy
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Resiliency
+metadata:
+  name: resiliency-policy
+  namespace: todo-app
+spec:
+  policies:
+    retries:
+      pubsubRetry:
+        policy: exponential
+        maxInterval: 60s
+        maxRetries: 3
+        duration: 1s
+      stateRetry:
+        policy: exponential
+        maxInterval: 30s
+        maxRetries: 3
+        duration: 500ms
+    timeouts:
+      general:
+        timeout: 30s
+    circuitBreakers:
+      pubsubCB:
+        maxRequests: 3
+        interval: 10s
+        timeout: 60s
+        trip: consecutiveFailures >= 5
+  targets:
+    components:
+      pubsub:
+        outbound:
+          retry: pubsubRetry
+          circuitBreaker: pubsubCB
+          timeout: general
+      statestore:
+        outbound:
+          retry: stateRetry
+          timeout: general
+```
+
+---
+
+## Secrets Configuration
+
+### Local Environment Secrets
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-secret
+  namespace: todo-app
+type: Opaque
+stringData:
+  password: "redis-password-here"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: todo-app
+type: Opaque
+stringData:
+  connectionString: "host=postgres.todo-app.svc.cluster.local port=5432 user=postgres password=postgres dbname=todo_app sslmode=disable"
+```
+
+### Cloud Environment Secrets
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redpanda-secret
+  namespace: todo-app
+type: Opaque
+stringData:
+  username: "redpanda-username"
+  password: "redpanda-password"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: neon-secret
+  namespace: todo-app
+type: Opaque
+stringData:
+  connectionString: "postgresql://user:password@ep-cool-darkness-123456.us-east-2.aws.neon.tech/neondb?sslmode=require"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jwt-secret
+  namespace: todo-app
+type: Opaque
+stringData:
+  secret: "your-jwt-secret-key-here"
+```
+
+---
+
+## Deployment Annotations
+
+### Backend Service
+
+```yaml
+annotations:
+  dapr.io/enabled: "true"
+  dapr.io/app-id: "backend"
+  dapr.io/app-port: "8000"
+  dapr.io/app-protocol: "http"
+  dapr.io/config: "dapr-config"
+  dapr.io/log-level: "info"
+  dapr.io/enable-metrics: "true"
+  dapr.io/metrics-port: "9090"
+  dapr.io/sidecar-cpu-limit: "200m"
+  dapr.io/sidecar-memory-limit: "256Mi"
+  dapr.io/sidecar-cpu-request: "100m"
+  dapr.io/sidecar-memory-request: "128Mi"
+```
+
+### Event Processor Service
+
+```yaml
+annotations:
+  dapr.io/enabled: "true"
+  dapr.io/app-id: "event-processor"
+  dapr.io/app-port: "8001"
+  dapr.io/app-protocol: "http"
+  dapr.io/config: "dapr-config"
+  dapr.io/log-level: "info"
+  dapr.io/enable-metrics: "true"
+  dapr.io/metrics-port: "9090"
+  dapr.io/sidecar-cpu-limit: "200m"
+  dapr.io/sidecar-memory-limit: "256Mi"
+  dapr.io/sidecar-cpu-request: "100m"
+  dapr.io/sidecar-memory-request: "128Mi"
+```
+
+### Reminder Scheduler Service
+
+```yaml
+annotations:
+  dapr.io/enabled: "true"
+  dapr.io/app-id: "reminder-scheduler"
+  dapr.io/app-port: "8002"
+  dapr.io/app-protocol: "http"
+  dapr.io/config: "dapr-config"
+  dapr.io/log-level: "info"
+  dapr.io/enable-metrics: "true"
+  dapr.io/metrics-port: "9090"
+  dapr.io/sidecar-cpu-limit: "200m"
+  dapr.io/sidecar-memory-limit: "256Mi"
+  dapr.io/sidecar-cpu-request: "100m"
+  dapr.io/sidecar-memory-request: "128Mi"
+```
+
+### Notification Service
+
+```yaml
+annotations:
+  dapr.io/enabled: "true"
+  dapr.io/app-id: "notification-service"
+  dapr.io/app-port: "8003"
+  dapr.io/app-protocol: "http"
+  dapr.io/config: "dapr-config"
+  dapr.io/log-level: "info"
+  dapr.io/enable-metrics: "true"
+  dapr.io/metrics-port: "9090"
+  dapr.io/sidecar-cpu-limit: "100m"
+  dapr.io/sidecar-memory-limit: "128Mi"
+  dapr.io/sidecar-cpu-request: "50m"
+  dapr.io/sidecar-memory-request: "64Mi"
+```
+
+### WebSocket Service
+
+```yaml
+annotations:
+  dapr.io/enabled: "true"
+  dapr.io/app-id: "websocket-service"
+  dapr.io/app-port: "8004"
+  dapr.io/app-protocol: "http"
+  dapr.io/config: "dapr-config"
+  dapr.io/log-level: "info"
+  dapr.io/enable-metrics: "true"
+  dapr.io/metrics-port: "9090"
+  dapr.io/sidecar-cpu-limit: "100m"
+  dapr.io/sidecar-memory-limit: "128Mi"
+  dapr.io/sidecar-cpu-request: "50m"
+  dapr.io/sidecar-memory-request: "64Mi"
+```
+
+---
+
+## Component Testing
+
+### Test Pub/Sub Component
+
+```bash
+# Publish test event
+dapr publish --publish-app-id backend \
+  --pubsub pubsub \
+  --topic task-events \
+  --data '{"event_id":"test-123","event_type":"task.created","user_id":"user_123","timestamp":"2026-02-14T10:30:00Z","payload":{"task_id":"task-456","title":"Test task","priority":"high"}}'
+
+# Subscribe to topic
+dapr run --app-id test-consumer \
+  --app-port 8080 \
+  --dapr-http-port 3500 \
+  --components-path ./components \
+  -- python consumer.py
+```
+
+### Test State Store Component
+
+```bash
+# Save state
+curl -X POST http://localhost:3500/v1.0/state/statestore \
+  -H "Content-Type: application/json" \
+  -d '[{"key":"test-key","value":"test-value"}]'
+
+# Get state
+curl http://localhost:3500/v1.0/state/statestore/test-key
+
+# Delete state
+curl -X DELETE http://localhost:3500/v1.0/state/statestore/test-key
+```
+
+### Test Secrets Component
+
+```bash
+# Get secret
+curl http://localhost:3500/v1.0/secrets/kubernetes-secrets/jwt-secret
+```
+
+---
+
+## Monitoring and Observability
+
+### Dapr Metrics
+
+Dapr exposes metrics on port 9090:
+- `dapr_http_server_request_count`: HTTP request count
+- `dapr_http_server_latency_ms`: HTTP request latency
+- `dapr_component_pubsub_ingress_count`: Pub/Sub ingress count
+- `dapr_component_pubsub_egress_count`: Pub/Sub egress count
+- `dapr_component_state_request_count`: State store request count
+
+### Prometheus Scrape Configuration
+
+```yaml
+scrape_configs:
+  - job_name: 'dapr'
+    kubernetes_sd_configs:
+    - role: pod
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_pod_annotation_dapr_io_enabled]
+      action: keep
+      regex: true
+    - source_labels: [__meta_kubernetes_pod_annotation_dapr_io_metrics_port]
+      action: replace
+      target_label: __address__
+      regex: ([^:]+)(?::\d+)?
+      replacement: $1:9090
+```
+
+---
+
+## Summary
+
+This configuration provides:
+- ✅ Separate Dapr components for local (Redis) and cloud (Redpanda) environments
+- ✅ State store configuration using PostgreSQL/Neon
+- ✅ Cron bindings for reminder scheduling
+- ✅ Kubernetes Secrets integration
+- ✅ Subscription configurations for all topics
+- ✅ Resiliency policies with retry and circuit breaker
+- ✅ Deployment annotations for all services
+- ✅ Testing and monitoring guidelines
+
+**Status**: Dapr components configuration complete

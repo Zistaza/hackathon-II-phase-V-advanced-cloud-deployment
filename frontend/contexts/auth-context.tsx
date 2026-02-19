@@ -83,6 +83,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Check for existing token on initial load
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      dispatch({ type: SET_LOADING, payload: false });
+      return;
+    }
+
     // First check cookies (for server-side consistency)
     let token = getCookie('authToken');
     let userDataStr = getCookie('userData');

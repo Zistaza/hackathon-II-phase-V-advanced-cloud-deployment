@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import { Task, TaskEvent } from '../types/task';
+import { Task, TaskEvent } from '../../types';
 import { getWebSocketService } from '../services/websocket';
 
 interface UseTaskSyncOptions {
@@ -41,19 +41,19 @@ export function useTaskSync(options: UseTaskSyncOptions): UseTaskSyncReturn {
         // Add new task to list
         if ('task_id' in event.payload) {
           const newTask: Task = {
+            id: event.payload.task_id,
             task_id: event.payload.task_id,
             user_id: event.user_id,
-            title: event.payload.title,
-            description: event.payload.description,
-            status: event.payload.status as any,
-            priority: event.payload.priority as any,
+            title: event.payload.title || 'Untitled Task',
+            description: event.payload.description ?? null,
+            completed: event.payload.status === 'complete',
+            priority: event.payload.priority,
             tags: event.payload.tags,
             due_date: event.payload.due_date,
-            recurrence_pattern: event.payload.recurrence_pattern as any,
+            recurrence_pattern: event.payload.recurrence_pattern,
             reminder_time: event.payload.reminder_time,
             created_at: event.timestamp,
-            updated_at: event.timestamp,
-            completed_at: null
+            updated_at: event.timestamp
           };
 
           setTasks(prev => {
@@ -89,8 +89,7 @@ export function useTaskSync(options: UseTaskSyncOptions): UseTaskSyncReturn {
             if (task.task_id === event.payload.task_id) {
               return {
                 ...task,
-                status: 'complete',
-                completed_at: event.timestamp,
+                completed: true,
                 updated_at: event.timestamp
               };
             }

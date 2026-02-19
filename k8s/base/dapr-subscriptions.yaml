@@ -1,0 +1,55 @@
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: task-events-subscription
+  namespace: todo-app
+spec:
+  pubsubname: pubsub
+  topic: task.events
+  routes:
+    default: /events/task
+  scopes:
+  - phase-v-backend
+  - phase-v-event-processor
+---
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: reminder-events-subscription
+  namespace: todo-app
+spec:
+  pubsubname: pubsub
+  topic: reminder.events
+  routes:
+    default: /events/reminder
+  scopes:
+  - phase-v-backend
+  - phase-v-reminder-scheduler
+  - phase-v-notification-service
+---
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: recurrence-events-subscription
+  namespace: todo-app
+spec:
+  pubsubname: pubsub
+  topic: recurrence.events
+  routes:
+    default: /events/recurrence
+  scopes:
+  - phase-v-backend
+  - phase-v-event-processor
+---
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: notification-events-subscription
+  namespace: todo-app
+spec:
+  pubsubname: pubsub
+  topic: notification.events
+  routes:
+    default: /events/notification
+  scopes:
+  - phase-v-notification-service

@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phase-v-reminder-scheduler
+  namespace: todo-app
+  labels:
+    app: phase-v-reminder-scheduler
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phase-v-reminder-scheduler
+  template:
+    metadata:
+      labels:
+        app: phase-v-reminder-scheduler
+        version: v1
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "phase-v-reminder-scheduler"
+        dapr.io/app-port: "8002"
+        dapr.io/config: "dapr-config"
+        dapr.io/sidecar-memory-limit: "256Mi"
+        dapr.io/sidecar-cpu-limit: "250m"
+    spec:
+      containers:
+      - name: reminder-scheduler
+        image: phase-v-reminder-scheduler:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8002
+          name: http
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: phase-v-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 5
+          periodSeconds: 5

@@ -1,0 +1,25 @@
+name: Docker Build - Websocket Service
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/src/api/websocket.py'
+      - 'backend/src/services/**'
+      - '.github/workflows/docker-websocket-service.yaml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/src/api/websocket.py'
+  release:
+    types: [published]
+
+jobs:
+  build-websocket-service:
+    name: Build Websocket Service Image
+    uses: ./.github/workflows/reusable-docker-build.yaml
+    with:
+      service-name: websocket-service
+      context-path: ./backend
+      dockerfile: ./backend/Dockerfile.websocket-service
+      platforms: linux/amd64

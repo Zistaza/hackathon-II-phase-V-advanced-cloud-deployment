@@ -1,148 +1,364 @@
-# Phase V: Advanced Cloud Deployment with Event-Driven Architecture
+# Phase-V Infrastructure Deployment
 
-## Overview
-Phase V extends the **Phase III Todo Chatbot** with advanced features and event-driven architecture, deploying to both **local Kubernetes (Minikube)** and **production cloud clusters (AKS/GKE/OKE)**.
-This includes implementing recurring tasks, reminders, priorities, tags, search/filter/sort, Kafka event streaming, Dapr integration, and full CI/CD with observability.
+[![CI](https://github.com/your-org/hackathon-II-PHASEV/actions/workflows/ci.yaml/badge.svg)](https://github.com/your-org/hackathon-II-PHASEV/actions/workflows/ci.yaml)
+[![Deploy](https://github.com/your-org/hackathon-II-PHASEV/actions/workflows/deploy-cloud.yaml/badge.svg)](https://github.com/your-org/hackathon-II-PHASEV/actions/workflows/deploy-cloud.yaml)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## Objective
-- Implement advanced task management features (recurring tasks, due dates, reminders, priorities, tags, search/filter/sort)
-- Build event-driven architecture using Kafka/Redpanda for service communication
-- Integrate Dapr for Pub/Sub, State Management, Jobs API, Secrets, and Service Invocation
-- Deploy to Minikube (local) and at least one cloud cluster (AKS/GKE/OKE)
-- Implement full CI/CD pipelines with GitHub Actions
-- Configure monitoring (Prometheus/Grafana) and logging (Loki/OpenSearch)
-- Follow the **Agentic Dev Stack workflow**: Write spec → Generate plan → Break into tasks → Implement via Claude Code
+A production-ready, event-driven todo application deployed on Kubernetes with Dapr microservices building blocks.
 
-## Requirements
+## 🎯 Features
 
-### Advanced Features
-- **Recurring Tasks**: Auto-create next task instance on completion via task.completed events
-- **Due Dates & Reminders**: Schedule reminders via Dapr Jobs API, publish to reminders topic
-- **Priorities**: Support low, medium, high, urgent priority levels with indexed queries
-- **Tags**: Multiple tags per task with efficient filtering
-- **Search**: Full-text search on task title and description
-- **Filter**: By status, priority, tags, due date
-- **Sort**: By creation date, due date, priority, completion status
+### Core Capabilities
 
-### Event-Driven Architecture
-- **Kafka Topics**: task-events, reminders, task-updates
-- **Event Schemas**: event_id, event_type, user_id, timestamp, payload
-- **Idempotent Handlers**: Use event_id for deduplication
-- **No Direct API Calls**: Services communicate via events or Dapr Service Invocation
+- **Event-Driven Architecture** - Kafka-based event streaming with Dapr Pub/Sub
+- **Microservices** - Distributed services with Dapr service invocation
+- **State Management** - PostgreSQL state store via Dapr
+- **Secrets Management** - Kubernetes secrets via Dapr Secrets API
+- **Real-Time Sync** - WebSocket-based multi-client synchronization
+- **Recurring Tasks** - Automatic recurring task generation
+- **Reminders** - Scheduled reminders with cron bindings
+- **Full-Text Search** - Advanced task search and filtering
+- **Task Priorities** - Priority-based task management
+- **Tags** - Tag-based task organization
 
-### Dapr Integration
-- **Pub/Sub**: Abstract Kafka/Redpanda message broker
-- **State Store**: Postgres/Neon DB for conversation and task caching
-- **Jobs API**: Reminder scheduling with exact timing
-- **Secrets**: Secure storage for API keys, DB credentials, cloud secrets
-- **Service Invocation**: Frontend → Backend with mTLS and retries
+### Infrastructure
 
-### Deployment & Operations
-- **Local**: Minikube with Dapr sidecars, Kafka/Redpanda container
-- **Cloud**: AKS/GKE/OKE with Helm charts, production Dapr components
-- **CI/CD**: GitHub Actions for build, test, deploy, rollback
-- **Monitoring**: Prometheus metrics, Grafana dashboards
-- **Logging**: Centralized logging with correlation IDs
+- **Kubernetes** - Container orchestration
+- **Dapr** - Distributed application runtime
+- **Prometheus** - Metrics collection
+- **Grafana** - Visualization and dashboards
+- **CI/CD** - GitHub Actions automation
+- **Multi-Environment** - Local (Minikube) and Cloud (Oracle Cloud)
 
-## Technology Stack
-| Component              | Technology / Tool                                    |
-|------------------------|-----------------------------------------------------|
-| Frontend               | OpenAI ChatKit, Next.js 16+, React 18+              |
-| Backend                | Python FastAPI, OpenAI Agents SDK                   |
-| MCP Server             | Official MCP SDK                                    |
-| ORM                    | SQLModel                                            |
-| Database               | Neon Serverless PostgreSQL                          |
-| Authentication         | Better Auth with JWT                                |
-| Message Broker         | Kafka or Redpanda                                   |
-| Service Mesh           | Dapr (Pub/Sub, State, Jobs, Secrets, Invocation)   |
-| Orchestration          | Kubernetes (Minikube local, AKS/GKE/OKE production) |
-| Package Manager        | Helm Charts                                         |
-| Monitoring             | Prometheus + Grafana                                |
-| Logging                | Loki or OpenSearch                                  |
-| CI/CD                  | GitHub Actions                                      |
+## 🏗️ Architecture
 
-## Kafka Topics & Event Schemas
-
-### task-events
-All task CRUD operations and completion events
-```json
-{
-  "event_id": "uuid",
-  "event_type": "task.created|task.updated|task.completed|task.deleted",
-  "user_id": "string",
-  "timestamp": "ISO 8601",
-  "payload": { "task_id": "string", "..." }
-}
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Client Layer                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
+│  │   Web App   │  │  Mobile App │  │   CLI/API   │             │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘             │
+└─────────┼────────────────┼────────────────┼────────────────────┘
+          │                │                │
+          └────────────────┴────────────────┘
+                           │
+          ┌────────────────▼────────────────┐
+          │       Traefik Ingress           │
+          │    (HTTPS/TLS Termination)      │
+          └────────────────┬────────────────┘
+                           │
+┌──────────────────────────┼───────────────────────────────────┐
+│                  Kubernetes Cluster                           │
+│                                                               │
+│  ┌─────────────────────┐                                     │
+│  │   Frontend (React)  │                                     │
+│  └─────────────────────┘                                     │
+│                                                               │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │              Backend Services (FastAPI)                 │ │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │ │
+│  │  │ Backend  │ │  Events  │ │ Reminders│ │  Notify  │  │ │
+│  │  │   API    │ │ Processor│ │ Scheduler│ │ Service  │  │ │
+│  │  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘  │ │
+│  │       │            │            │            │         │ │
+│  │       └────────────┴────────────┴────────────┘         │ │
+│  │                         │                               │ │
+│  │              ┌──────────▼──────────┐                   │ │
+│  │              │   Dapr Sidecars     │                   │ │
+│  │              │  - Pub/Sub          │                   │ │
+│  │              │  - State Store      │                   │ │
+│  │              │  - Secrets          │                   │ │
+│  │              │  - Service Invoke   │                   │ │
+│  │              │  - Bindings         │                   │ │
+│  │              └──────────┬──────────┘                   │ │
+│  └─────────────────────────┼───────────────────────────────┘ │
+│                            │                                  │
+└────────────────────────────┼──────────────────────────────────┘
+                             │
+         ┌───────────────────┼───────────────────┐
+         │                   │                   │
+         ▼                   ▼                   ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│  Redpanda Cloud │ │  Neon PostgreSQL│ │  Kubernetes     │
+│   (Pub/Sub)     │ │   (State Store) │ │    Secrets      │
+└─────────────────┘ └─────────────────┘ └─────────────────┘
 ```
 
-### reminders
-Reminder triggers for notification service
-```json
-{
-  "event_id": "uuid",
-  "event_type": "reminder.trigger",
-  "user_id": "string",
-  "timestamp": "ISO 8601",
-  "payload": { "reminder_id": "string", "task_id": "string", "due_date": "ISO 8601" }
-}
+## 📁 Project Structure
+
+```
+hackathon-II-PHASEV/
+├── backend/                    # FastAPI backend services
+│   ├── src/
+│   │   ├── api/               # API endpoints
+│   │   ├── dapr/              # Dapr clients
+│   │   ├── events/            # Event handlers & schemas
+│   │   ├── services/          # Business logic services
+│   │   └── config/            # Configuration
+│   └── requirements.txt
+├── frontend/                   # React frontend application
+│   ├── src/
+│   └── package.json
+├── k8s/                        # Kubernetes manifests
+│   ├── base/                  # Base resources
+│   ├── local/                 # Minikube overlays
+│   └── cloud/                 # Oracle Cloud overlays
+├── monitoring/                 # Monitoring stack
+│   ├── prometheus/            # Prometheus config
+│   └── grafana/               # Grafana dashboards
+├── scripts/                    # Deployment scripts
+│   ├── setup-minikube.sh
+│   ├── deploy-local.sh
+│   ├── deploy-cloud.sh
+│   └── setup-monitoring.sh
+├── docs/                       # Documentation
+│   └── oracle-cloud-setup.md
+└── .github/workflows/          # CI/CD pipelines
 ```
 
-### task-updates
-Real-time task state changes for client sync
-```json
-{
-  "event_id": "uuid",
-  "event_type": "task.state_changed",
-  "user_id": "string",
-  "timestamp": "ISO 8601",
-  "payload": { "task_id": "string", "changes": {...} }
-}
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Docker (20.10+)
+- kubectl (1.25+)
+- Helm (3.0+)
+- Minikube (1.30+)
+- Dapr CLI (1.12+)
+
+### Local Deployment (5 minutes)
+
+```bash
+# 1. Start Minikube
+./scripts/setup-minikube.sh
+
+# 2. Install Dapr
+./scripts/setup-dapr.sh
+
+# 3. Deploy Redis
+./scripts/deploy-redis.sh
+
+# 4. Create secrets
+./scripts/create-local-secrets.sh
+
+# 5. Deploy application
+./scripts/deploy-local.sh
+
+# 6. Validate deployment
+./scripts/validate-deployment.sh
+
+# 7. Access application
+# Add to /etc/hosts: "$(minikube ip) todo-app.local"
+# Open: http://todo-app.local
 ```
 
-## Dapr Components Configuration
+### Cloud Deployment (Oracle Cloud)
 
-### Pub/Sub Component (pubsub.yaml)
-Configure Kafka/Redpanda for event streaming with at-least-once delivery semantics.
+```bash
+# 1. Provision Oracle Cloud instances
+# Follow docs/oracle-cloud-setup.md
 
-### State Store Component (statestore.yaml)
-Configure Postgres/Neon DB for conversation history and task caching with appropriate consistency guarantees.
+# 2. Install k3s
+./scripts/install-k3s.sh server
+./scripts/install-k3s.sh agent
 
-### Jobs API Component (jobs.yaml)
-Configure reminder scheduling with cron expressions or one-time schedules, ensuring job persistence across restarts.
+# 3. Install infrastructure
+./scripts/install-traefik.sh
+./scripts/install-cert-manager.sh
+dapr init -k --wait
 
-### Secrets Component (secrets.yaml)
-Configure Kubernetes Secrets or cloud-native secret stores for API keys, DB credentials, and cloud secrets.
+# 4. Create secrets
+./scripts/create-cloud-secrets.sh
 
-## Success Criteria
+# 5. Deploy application
+./scripts/deploy-cloud.sh
+```
 
-- ✅ All advanced features implemented (recurring tasks, reminders, priorities, tags, search/filter/sort)
-- ✅ Event-driven architecture operational (task-events, reminders, task-updates topics)
-- ✅ Dapr sidecars configured on all environments (Minikube, AKS/GKE/OKE)
-- ✅ Services deployed successfully on Minikube and at least one cloud cluster
-- ✅ Reminders fire correctly via Dapr Jobs API
-- ✅ Recurring tasks auto-create next instance on completion
-- ✅ Monitoring dashboards active (Prometheus/Grafana)
-- ✅ Centralized logging operational (Loki/OpenSearch)
-- ✅ CI/CD pipelines automated (GitHub Actions)
-- ✅ All event handlers idempotent with event_id deduplication
-- ✅ No unhandled exceptions, schema violations, or security breaches
-- ✅ Deployment is demo-ready and judge-verifiable
+## 📊 Monitoring
 
-## Getting Started
+### Access Grafana
 
-See the constitution at `.specify/memory/constitution.md` for complete Phase V principles and standards.
+```bash
+kubectl port-forward -n monitoring svc/grafana 3000:80
+# http://localhost:3000 (admin/admin)
+```
 
-Follow the Agentic Dev Stack workflow:
-1. Write feature specification using `/sp.specify`
-2. Generate implementation plan using `/sp.plan`
-3. Break into tasks using `/sp.tasks`
-4. Implement via Claude Code agents
+### Access Prometheus
 
-## Architecture
+```bash
+kubectl port-forward -n monitoring svc/prometheus 9090:9090
+# http://localhost:9090
+```
 
-Phase V builds on Phase III (Todo AI Chatbot) and Phase IV (Kubernetes Deployment) by adding:
-- Event-driven service communication via Kafka/Redpanda
-- Dapr integration for Pub/Sub, State, Jobs, Secrets, Service Invocation
-- Advanced task management features (recurring, reminders, priorities, tags, search)
-- Full CI/CD with observability (monitoring, logging, alerting)
-- Cloud portability (Minikube → AKS/GKE/OKE)
+### Dashboards
+
+- **Task Operations** - Task API metrics
+- **Event Processing** - Event-driven architecture metrics
+- **Reminder Scheduling** - Reminder service metrics
+- **System Health** - Overall system health
+
+## 🔧 Configuration
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | Required |
+| `JWT_SECRET` | JWT signing secret | Required |
+| `REDIS_HOST` | Redis host | localhost |
+| `REDIS_PORT` | Redis port | 6379 |
+| `DAPR_HTTP_ENDPOINT` | Dapr HTTP endpoint | http://localhost:3500 |
+| `USE_DAPR_SECRETS` | Use Dapr for secrets | true |
+
+### Kubernetes Secrets
+
+```bash
+# Create secrets
+kubectl create secret generic neon-secret \
+  --from-literal=connectionString="postgresql://..."
+
+kubectl create secret generic jwt-secret \
+  --from-literal=secret="your-secret"
+
+kubectl create secret generic redpanda-secret \
+  --from-literal=username="..." \
+  --from-literal=password="..."
+```
+
+## 🧪 Testing
+
+### Run Tests
+
+```bash
+# Backend tests
+cd backend
+pytest tests/ -v
+
+# Frontend tests
+cd frontend
+npm test
+
+# End-to-end tests
+python scripts/test-end-to-end.py
+
+# Dapr integration tests
+python scripts/test-dapr-integration.py
+```
+
+### Test Event Flow
+
+```bash
+# Create a task (triggers task.created event)
+curl -X POST http://todo-app.local/api/user_123/tasks \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"title": "Test Task", "priority": "high"}'
+
+# Check event processor logs
+kubectl logs -n todo-app -l app=event-processor --tail=50
+```
+
+## 📈 CI/CD
+
+### Workflows
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| CI | Push/PR | Build and test |
+| Docker Build | Push to main | Build and push images |
+| Deploy Local | Manual/Develop | Deploy to Minikube |
+| Deploy Cloud | Manual/Main | Deploy to Oracle Cloud |
+
+### Manual Deployment
+
+```bash
+# Via GitHub CLI
+gh workflow run deploy-cloud.yaml \
+  --field environment=production \
+  --field version=main
+
+# Trigger rollback
+gh workflow run deploy-cloud.yaml --field rollback=true
+```
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+**Pods not starting:**
+```bash
+kubectl describe pod <pod-name> -n todo-app
+kubectl logs <pod-name> -n todo-app
+```
+
+**Dapr sidecar not injecting:**
+```bash
+dapr status -k
+kubectl rollout restart deployment/<name> -n todo-app
+```
+
+**Ingress not accessible:**
+```bash
+kubectl get ingress -n todo-app
+grep todo-app.local /etc/hosts
+```
+
+See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for more issues.
+
+## 📚 Documentation
+
+- [Architecture](ARCHITECTURE.md) - System architecture details
+- [Deployment](DEPLOYMENT.md) - Detailed deployment guide
+- [Quickstart](specs/013-phasev-infra-deployment/quickstart.md) - Quick start guide
+- [Oracle Cloud Setup](docs/oracle-cloud-setup.md) - Cloud provisioning
+- [Troubleshooting](TROUBLESHOOTING.md) - Common issues
+
+## 🔐 Security
+
+- JWT authentication for all API endpoints
+- Secrets managed via Kubernetes Secrets and Dapr
+- HTTPS/TLS for cloud deployment
+- Network policies for pod security
+- Resource quotas and limits
+
+## 📊 Resource Requirements
+
+### Local (Minikube)
+
+- CPU: 4 cores recommended
+- Memory: 8GB RAM
+- Disk: 20GB
+
+### Cloud (Oracle Cloud Always Free)
+
+- 2x VM.Standard.E2.1.Micro (1 OCPU, 6GB RAM each)
+- Total: 2 OCPU, 12GB RAM (within free tier)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests
+5. Submit a pull request
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## 🎓 Learning Resources
+
+- [Dapr Documentation](https://docs.dapr.io/)
+- [Kubernetes Documentation](https://kubernetes.io/docs/)
+- [Prometheus Documentation](https://prometheus.io/docs/)
+- [Grafana Documentation](https://grafana.com/docs/)
+
+## 📞 Support
+
+- GitHub Issues: [Create an issue](https://github.com/your-org/hackathon-II-PHASEV/issues)
+- Documentation: See `docs/` directory
+- Quickstart: `specs/013-phasev-infra-deployment/quickstart.md`
+
+---
+
+**Built with ❤️ using FastAPI, React, Kubernetes, and Dapr**

@@ -1,0 +1,100 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: phase-v-backend-network-policy
+  namespace: todo-app
+spec:
+  podSelector:
+    matchLabels:
+      app: phase-v-backend
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow traffic from frontend
+  - from:
+    - podSelector:
+        matchLabels:
+          app: phase-v-frontend
+    ports:
+    - protocol: TCP
+      port: 8000
+  # Allow traffic from Dapr sidecar
+  - from:
+    - podSelector:
+        matchLabels:
+          dapr.io/sidecar: "true"
+    ports:
+    - protocol: TCP
+      port: 8000
+  # Allow traffic from ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  # Allow DNS resolution
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow database connections
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow Dapr sidecar communication
+  - to:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 50001
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: phase-v-frontend-network-policy
+  namespace: todo-app
+spec:
+  podSelector:
+    matchLabels:
+      app: phase-v-frontend
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow traffic from ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 80
+  egress:
+  # Allow DNS resolution
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow backend API calls
+  - to:
+    - podSelector:
+        matchLabels:
+          app: phase-v-backend
+    ports:
+    - protocol: TCP
+      port: 8000

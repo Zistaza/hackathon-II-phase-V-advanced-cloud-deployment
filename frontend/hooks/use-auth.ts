@@ -22,20 +22,22 @@ export const useAuth = (): UseAuthReturn => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Check for existing token on initial load
-    const storedToken = localStorage.getItem('authToken');
-    const storedUserData = localStorage.getItem('userData');
+    // Check for existing token on initial load (only in browser)
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem('authToken');
+      const storedUserData = localStorage.getItem('userData');
 
-    if (storedToken && storedUserData) {
-      try {
-        const parsedUser = JSON.parse(storedUserData);
-        setToken(storedToken);
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Failed to parse stored user data:', error);
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userData');
+      if (storedToken && storedUserData) {
+        try {
+          const parsedUser = JSON.parse(storedUserData);
+          setToken(storedToken);
+          setUser(parsedUser);
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error('Failed to parse stored user data:', error);
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userData');
+        }
       }
     }
 

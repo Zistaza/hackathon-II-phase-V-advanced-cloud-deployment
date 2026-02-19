@@ -3,7 +3,7 @@
  * Connects to backend WebSocket endpoint and receives task events
  */
 
-import { TaskEvent } from '../types/task';
+import { TaskEvent } from '../../types';
 
 export type WebSocketEventHandler = (event: TaskEvent) => void;
 

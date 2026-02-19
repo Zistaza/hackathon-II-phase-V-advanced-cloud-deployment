@@ -46,7 +46,7 @@ export default function EditTaskPage() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto flex justify-center items-center h-64">
+      <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
@@ -54,22 +54,24 @@ export default function EditTaskPage() {
 
   if (error) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="mb-6">
-          <Link href={`/tasks/${taskId}`} className="text-primary hover:underline">
-            ← Back to Task
-          </Link>
-        </div>
-        <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md">
-          <p className="text-destructive">{error}</p>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="mt-2 rounded-lg hover-lift"
-            onClick={() => router.back()}
-          >
-            Go Back
-          </Button>
+      <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4">
+        <div className="w-full max-w-2xl">
+          <div className="mb-6 text-center">
+            <Link href={`/tasks/${taskId}`} className="text-primary hover:underline">
+              ← Back to Task
+            </Link>
+          </div>
+          <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md text-center">
+            <p className="text-destructive">{error}</p>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mt-2 rounded-lg hover-lift"
+              onClick={() => router.back()}
+            >
+              Go Back
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -77,50 +79,54 @@ export default function EditTaskPage() {
 
   if (!task) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <div className="mb-6">
-          <Link href="/tasks" className="text-primary hover:underline">
-            ← Back to Tasks
-          </Link>
-        </div>
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Task not found</p>
+      <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4">
+        <div className="w-full max-w-2xl">
+          <div className="mb-6 text-center">
+            <Link href="/tasks" className="text-primary hover:underline">
+              ← Back to Tasks
+            </Link>
+          </div>
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Task not found</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-6">
-        <Link href={`/tasks/${taskId}`} className="text-primary hover:underline">
-          ← Back to Task
-        </Link>
+    <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4">
+      <div className="w-full max-w-2xl">
+        <div className="mb-6 text-center">
+          <Link href={`/tasks/${taskId}`} className="text-primary hover:underline">
+            ← Back to Task
+          </Link>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-center">Edit Task</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TaskForm
+              onSubmit={handleSubmit}
+              onCancel={() => router.push(`/tasks/${taskId}`)}
+              initialData={{
+                title: task.title,
+                description: task.description || undefined,
+                completed: task.completed
+              }}
+              submitButtonText="Update Task"
+            />
+
+            {error && (
+              <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-destructive">{error}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Edit Task</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <TaskForm
-            onSubmit={handleSubmit}
-            onCancel={() => router.push(`/tasks/${taskId}`)}
-            initialData={{
-              title: task.title,
-              description: task.description || undefined,
-              completed: task.completed
-            }}
-            submitButtonText="Update Task"
-          />
-
-          {error && (
-            <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
-              <p className="text-destructive">{error}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }

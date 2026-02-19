@@ -1,0 +1,26 @@
+name: Docker Build - Event Processor
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/src/events/**'
+      - 'backend/src/dapr/**'
+      - '.github/workflows/docker-event-processor.yaml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/src/events/**'
+      - 'backend/src/dapr/**'
+  release:
+    types: [published]
+
+jobs:
+  build-event-processor:
+    name: Build Event Processor Image
+    uses: ./.github/workflows/reusable-docker-build.yaml
+    with:
+      service-name: event-processor
+      context-path: ./backend
+      dockerfile: ./backend/Dockerfile.event-processor
+      platforms: linux/amd64
