@@ -1,11 +1,11 @@
-from fastapi import APIRouter, HTTPException, status, Depends
-from typing import Dict, Any
+from fastapi import APIRouter, HTTPException, status, Depends, Header
+from typing import Dict, Any, Optional
 from sqlmodel import Session, select
 from pydantic import BaseModel
 from passlib.context import CryptContext
 from ..models.user_model import User, UserCreate, UserPublic
 from ..models.user import UserRegistrationRequest
-from ..utils.jwt import create_access_token, JWTData
+from ..utils.jwt import create_access_token, verify_token, JWTData
 from ..config.settings import settings
 from ..database import get_session
 
@@ -24,6 +24,49 @@ class AuthResponse(BaseModel):
 class LoginRequest(BaseModel):
     email: str
     password: str
+
+
+def get_current_user(authorization: Optional[str] = Header(None), session: Session = Depends(get_session)) -> User:
+    """
+    Dependency to get the current authenticated user from JWT token
+    """
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header missing"
+        )
+
+    # Extract token from "Bearer <token>" format
+    try:
+        scheme, token = authorization.split()
+        if scheme.lower() != "bearer":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication scheme"
+            )
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorization header format"
+        )
+
+    # Verify token
+    jwt_data = verify_token(token)
+    if not jwt_data:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+
+    # Get user from database
+    user = session.exec(select(User).where(User.id == jwt_data.user_id)).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
+        )
+
+    return user
 
 
 @router.post("/register", response_model=AuthResponse)
@@ -107,3 +150,26 @@ async def login_user(login_data: LoginRequest, session: Session = Depends(get_se
 @router.post("/logout")
 async def logout_user():
     return {"message": "Successfully logged out"}
+
+
+@router.get("/verify")
+async def verify_user_token(current_user: User = Depends(get_current_user)):
+    """
+    Verify if the provided JWT token is valid
+    Returns 200 if valid, 401 if invalid
+    """
+    return {"valid": True, "user_id": current_user.id}
+
+
+@router.get("/me", response_model=UserPublic)
+async def get_current_user_info(current_user: User = Depends(get_current_user)) -> UserPublic:
+    """
+    Get the current authenticated user's information
+    """
+    return UserPublic.from_orm(current_user) if hasattr(UserPublic, 'from_orm') else UserPublic(
+        id=current_user.id,
+        email=current_user.email,
+        name=current_user.name,
+        created_at=current_user.created_at,
+        updated_at=current_user.updated_at
+    )

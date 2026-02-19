@@ -52,8 +52,8 @@ export const TaskList: React.FC<TaskListProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="space-y-3">
-        {tasks.map(task => (
+      <div className="space-y-8">
+        {tasks.map((task) => (
           <TaskItem
             key={task.id}
             task={task}

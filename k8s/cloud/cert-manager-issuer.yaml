@@ -1,0 +1,116 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  labels:
+    app.kubernetes.io/part-of: phase-v
+    environment: cloud
+spec:
+  acme:
+    # Let's Encrypt Production Server
+    server: https://acme-v02.api.letsencrypt.org/directory
+    
+    # Email address for expiration notifications
+    email: admin@example.com
+    
+    # Name of a secret used to store the ACME account's private key
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    
+    # Enable the HTTP-01 challenge provider
+    solvers:
+    - http01:
+        ingress:
+          class: traefik
+          podTemplate:
+            spec:
+              nodeSelector:
+                "kubernetes.io/os": linux
+              containers:
+              - name: acmesolver
+                resources:
+                  requests:
+                    cpu: 10m
+                    memory: 32Mi
+                  limits:
+                    cpu: 50m
+                    memory: 64Mi
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+  labels:
+    app.kubernetes.io/part-of: phase-v
+    environment: cloud
+spec:
+  acme:
+    # Let's Encrypt Staging Server (for testing)
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    
+    # Email address for expiration notifications
+    email: admin@example.com
+    
+    # Name of a secret used to store the ACME account's private key
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    
+    # Enable the HTTP-01 challenge provider
+    solvers:
+    - http01:
+        ingress:
+          class: traefik
+          podTemplate:
+            spec:
+              nodeSelector:
+                "kubernetes.io/os": linux
+              containers:
+              - name: acmesolver
+                resources:
+                  requests:
+                    cpu: 10m
+                    memory: 32Mi
+                  limits:
+                    cpu: 50m
+                    memory: 64Mi
+---
+# Certificate for the main application domain
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: todo-app-tls
+  namespace: todo-app
+  labels:
+    app.kubernetes.io/part-of: phase-v
+    environment: cloud
+spec:
+  # The secret name where the TLS certificate will be stored
+  secretName: todo-app-tls
+  
+  # Duration of the certificate
+  duration: 2160h # 90 days
+  
+  # Renew before this duration
+  renewBefore: 360h # 15 days
+  
+  # The DNS names the certificate is valid for
+  dnsNames:
+  - todo-app.example.com
+  - www.todo-app.example.com
+  
+  # The issuer that will sign the certificate
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  
+  # Private key configuration
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+    rotationPolicy: Always
+  
+  # Mark the certificate for usage
+  usages:
+  - server auth
+  - client auth

@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phase-v-notification-service
+  namespace: todo-app
+  labels:
+    app: phase-v-notification-service
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phase-v-notification-service
+  template:
+    metadata:
+      labels:
+        app: phase-v-notification-service
+        version: v1
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "phase-v-notification-service"
+        dapr.io/app-port: "8003"
+        dapr.io/config: "dapr-config"
+        dapr.io/sidecar-memory-limit: "256Mi"
+        dapr.io/sidecar-cpu-limit: "250m"
+    spec:
+      containers:
+      - name: notification-service
+        image: phase-v-notification-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8003
+          name: http
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: phase-v-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 5
+          periodSeconds: 5

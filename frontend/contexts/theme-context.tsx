@@ -19,6 +19,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      setMounted(true);
+      return;
+    }
+
     // Check for saved theme in localStorage
     const savedTheme = localStorage.getItem('theme') as Theme | null;
     const savedSystemPreference = localStorage.getItem('isSystemPreferred') === 'true';

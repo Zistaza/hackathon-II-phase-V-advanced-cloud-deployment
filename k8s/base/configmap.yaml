@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: phase-v-config
+  namespace: todo-app
+data:
+  APP_NAME: "Phase-V Todo"
+  APP_ENV: "production"
+  LOG_LEVEL: "INFO"
+  
+  # Backend Configuration
+  BACKEND_HOST: "0.0.0.0"
+  BACKEND_PORT: "8000"
+  
+  # Event Processor Configuration
+  EVENT_PROCESSOR_HOST: "0.0.0.0"
+  EVENT_PROCESSOR_PORT: "8001"
+  
+  # Reminder Scheduler Configuration
+  REMINDER_SCHEDULER_HOST: "0.0.0.0"
+  REMINDER_SCHEDULER_PORT: "8002"
+  
+  # Notification Service Configuration
+  NOTIFICATION_SERVICE_HOST: "0.0.0.0"
+  NOTIFICATION_SERVICE_PORT: "8003"
+  
+  # WebSocket Service Configuration
+  WEBSOCKET_SERVICE_HOST: "0.0.0.0"
+  WEBSOCKET_SERVICE_PORT: "8004"
+  
+  # Dapr Configuration
+  DAPR_HTTP_ENDPOINT: "http://localhost:3500"
+  DAPR_GRPC_ENDPOINT: "localhost:50001"
+  
+  # Feature Flags
+  ENABLE_REALTIME_UPDATES: "true"
+  ENABLE_REMINDERS: "true"
+  ENABLE_RECURRING_TASKS: "true"

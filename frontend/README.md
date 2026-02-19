@@ -88,7 +88,7 @@ yarn start
 
 ## Environment Variables
 
-- `NEXT_PUBLIC_API_BASE_URL`: Base URL for the backend API (e.g., http://localhost:8000)
+- `NEXT_PUBLIC_API_BASE_URL`: Base URL for the backend API (e.g., http://localhost:8000/api)
 - `NEXT_PUBLIC_JWT_TOKEN`: Authentication token for API requests (development only)
 - `NEXT_PUBLIC_DEFAULT_USER_ID`: Default user ID for testing (development only)
 

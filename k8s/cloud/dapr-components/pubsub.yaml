@@ -1,0 +1,36 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+  namespace: todo-app
+  labels:
+    app.kubernetes.io/part-of: phase-v
+    environment: cloud
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  - name: brokers
+    value: "REDACTED.redpanda.cloud:9092"
+  - name: authType
+    value: "sasl"
+  - name: saslUsername
+    secretKeyRef:
+      name: redpanda-secret
+      key: username
+  - name: saslPassword
+    secretKeyRef:
+      name: redpanda-secret
+      key: password
+  - name: maxMessageBytes
+    value: "1048576"
+  - name: consumerID
+    value: "phase-v-consumer"
+  - name: disableTls
+    value: "false"
+  - name: tlsInsecureSkipVerify
+    value: "false"
+  - name: initialBackoff
+    value: "1s"
+  - name: maxBackoff
+    value: "30s"

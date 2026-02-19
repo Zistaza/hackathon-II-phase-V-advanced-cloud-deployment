@@ -36,25 +36,27 @@ export default function CreateTaskPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-6">
-        <Link href="/tasks">
-          <Button className="rounded-lg hover-lift">← Back to Tasks</Button>
-        </Link>
-      </div>
+    <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4">
+      <div className="w-full max-w-2xl">
+        <div className="mb-6 text-center">
+          <Link href="/tasks">
+            <Button className="rounded-lg hover-lift">← Back to Tasks</Button>
+          </Link>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Create New Task</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <TaskForm
-            onSubmit={handleSubmit}
-            onCancel={() => router.push('/tasks')}
-            submitButtonText="Create Task"
-          />
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-center">Create New Task</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TaskForm
+              onSubmit={handleSubmit}
+              onCancel={() => router.push('/tasks')}
+              submitButtonText="Create Task"
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -104,7 +104,7 @@ class ApiService {
       };
 
       const response: AxiosResponse<ChatResponse> = await axios.post(
-        `${this.baseUrl}/api/chat/${userId}`,
+        `${this.baseUrl}/chat/${userId}`,
         chatMessage,
         {
           headers: this.getAuthHeaders(),

@@ -1,0 +1,107 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Namespace for all resources
+namespace: todo-app
+
+# Resources to include in local deployment
+resources:
+  - ../base
+  - ./ingress.yaml
+
+# Dapr components are applied separately via kubectl apply
+# to ensure they exist before deployments start
+
+# ConfigMap patches for local environment
+configMapGenerator:
+  - name: app-config
+    behavior: merge
+    literals:
+      - ENVIRONMENT=local
+      - DAPR_HTTP_ENDPOINT=http://localhost:3500
+      - REDIS_HOST=redis.todo-app.svc.cluster.local
+      - REDIS_PORT=6379
+      - LOG_LEVEL=debug
+
+# Secret references (secrets must be created manually)
+secretGenerator: []
+
+# Patches for local-specific configurations
+patches:
+  # Reduce resource requests for local development
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "50m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "128Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "200m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "256Mi"
+    target:
+      kind: Deployment
+      name: backend
+
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "50m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "128Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "200m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "256Mi"
+    target:
+      kind: Deployment
+      name: event-processor
+
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+    target:
+      kind: Deployment
+      name: backend
+
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+    target:
+      kind: Deployment
+      name: event-processor
+
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+    target:
+      kind: Deployment
+      name: frontend
+
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+    target:
+      kind: Deployment
+      name: websocket-service
+
+# Images to use (use local or dev images if needed)
+images: []
+
+# Labels to apply to all resources
+commonLabels:
+  environment: local
+  app.kubernetes.io/part-of: phase-v
+
+# Annotations for Dapr sidecar configuration
+# These are already set in the base deployments

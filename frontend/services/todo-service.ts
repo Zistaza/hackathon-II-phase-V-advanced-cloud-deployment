@@ -60,8 +60,25 @@ export const todoService = {
 
       // Make sure the URL starts with a slash for relative path
       const normalizedUrl = url.startsWith('/') ? url : `/${url}`;
-      const response = await apiInstance.get<Task[]>(normalizedUrl);
-      return response.data;
+      const response = await apiInstance.get<any[]>(normalizedUrl);
+
+      // Transform backend response (task_id) to frontend format (id)
+      const tasks: Task[] = response.data.map((task: any) => ({
+        id: task.task_id || task.id, // Backend uses task_id, frontend uses id
+        title: task.title,
+        description: task.description,
+        completed: task.completed,
+        user_id: task.user_id,
+        priority: task.priority || 'medium',
+        tags: task.tags || [],
+        due_date: task.due_date || null,
+        recurrence_pattern: task.recurrence_pattern || 'none',
+        reminder_time: task.reminder_time || null,
+        created_at: task.created_at,
+        updated_at: task.updated_at
+      }));
+
+      return tasks;
     } catch (error: any) {
       console.error('Error fetching tasks:', error);
       console.error('Full error response:', error.response);
@@ -123,8 +140,33 @@ export const todoService = {
         throw new Error('Invalid user ID format');
       }
 
-      const response = await apiInstance.post<Task>(`/${userId}/tasks`, taskData);
-      return response.data;
+      // Debug logging
+      console.log('Creating task with data:', taskData);
+      console.log('User ID:', userId);
+      console.log('Request URL:', `/${userId}/tasks`);
+      console.log('API Base URL:', API_BASE_URL);
+
+      const response = await apiInstance.post<any>(`/${userId}/tasks`, taskData);
+
+      console.log('Task created successfully:', response.data);
+
+      // Transform backend response (task_id) to frontend format (id)
+      const task: Task = {
+        id: response.data.task_id || response.data.id,
+        title: response.data.title,
+        description: response.data.description,
+        completed: response.data.completed,
+        user_id: response.data.user_id,
+        priority: response.data.priority || 'medium',
+        tags: response.data.tags || [],
+        due_date: response.data.due_date || null,
+        recurrence_pattern: response.data.recurrence_pattern || 'none',
+        reminder_time: response.data.reminder_time || null,
+        created_at: response.data.created_at,
+        updated_at: response.data.updated_at
+      };
+
+      return task;
     } catch (error: any) {
       console.error('Error creating task:', error);
       if (error.response?.status === 401) {
@@ -157,8 +199,25 @@ export const todoService = {
         throw new Error('Invalid user ID format');
       }
 
-      const response = await apiInstance.get<Task>(`/${userId}/tasks/${taskId}`);
-      return response.data;
+      const response = await apiInstance.get<any>(`/${userId}/tasks/${taskId}`);
+
+      // Transform backend response (task_id) to frontend format (id)
+      const task: Task = {
+        id: response.data.task_id || response.data.id,
+        title: response.data.title,
+        description: response.data.description,
+        completed: response.data.completed,
+        user_id: response.data.user_id,
+        priority: response.data.priority || 'medium',
+        tags: response.data.tags || [],
+        due_date: response.data.due_date || null,
+        recurrence_pattern: response.data.recurrence_pattern || 'none',
+        reminder_time: response.data.reminder_time || null,
+        created_at: response.data.created_at,
+        updated_at: response.data.updated_at
+      };
+
+      return task;
     } catch (error: any) {
       console.error('Error fetching task by ID:', error);
       if (error.response?.status === 401) {
@@ -191,8 +250,25 @@ export const todoService = {
         throw new Error('Invalid user ID format');
       }
 
-      const response = await apiInstance.put<Task>(`/${userId}/tasks/${taskId}`, taskData);
-      return response.data;
+      const response = await apiInstance.put<any>(`/${userId}/tasks/${taskId}`, taskData);
+
+      // Transform backend response (task_id) to frontend format (id)
+      const task: Task = {
+        id: response.data.task_id || response.data.id,
+        title: response.data.title,
+        description: response.data.description,
+        completed: response.data.completed,
+        user_id: response.data.user_id,
+        priority: response.data.priority || 'medium',
+        tags: response.data.tags || [],
+        due_date: response.data.due_date || null,
+        recurrence_pattern: response.data.recurrence_pattern || 'none',
+        reminder_time: response.data.reminder_time || null,
+        created_at: response.data.created_at,
+        updated_at: response.data.updated_at
+      };
+
+      return task;
     } catch (error: any) {
       console.error('Error updating task:', error);
       if (error.response?.status === 401) {

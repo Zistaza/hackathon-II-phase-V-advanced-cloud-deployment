@@ -1,0 +1,541 @@
+# Event Schemas Contract
+
+**Feature**: 013-phasev-infra-deployment
+**Date**: 2026-02-14
+**Version**: 1.0.0
+
+## Overview
+
+This document defines the contract for all event schemas used in the event-driven architecture. All events MUST conform to these schemas.
+
+---
+
+## Base Event Schema
+
+```yaml
+BaseEvent:
+  type: object
+  required:
+    - event_id
+    - event_type
+    - user_id
+    - timestamp
+    - payload
+  properties:
+    event_id:
+      type: string
+      format: uuid
+      description: Unique identifier for idempotency
+    event_type:
+      type: string
+      pattern: "^[a-z]+\\.[a-z]+$"
+      description: Event type identifier (e.g., task.created)
+    user_id:
+      type: string
+      minLength: 1
+      description: Owner of the resource
+    timestamp:
+      type: string
+      format: date-time
+      description: Event creation time in ISO 8601 format
+    payload:
+      type: object
+      description: Event-specific data
+    metadata:
+      type: object
+      properties:
+        source:
+          type: string
+          description: Service that published the event
+        correlation_id:
+          type: string
+          format: uuid
+          description: For tracing related events
+        version:
+          type: string
+          default: "1.0.0"
+          description: Schema version
+```
+
+---
+
+## Task Lifecycle Events
+
+### task.created
+
+```yaml
+TaskCreatedEvent:
+  allOf:
+    - $ref: "#/BaseEvent"
+    - type: object
+      properties:
+        event_type:
+          const: "task.created"
+        payload:
+          type: object
+          required:
+            - task_id
+            - title
+            - priority
+          properties:
+            task_id:
+              type: string
+              format: uuid
+            title:
+              type: string
+              maxLength: 255
+            description:
+              type: string
+              maxLength: 5000
+            priority:
+              type: string
+              enum: [low, medium, high, urgent]
+            tags:
+              type: array
+              items:
+                type: string
+                maxLength: 50
+              maxItems: 10
+            due_date:
+              type: string
+              format: date-time
+            recurrence_rule:
+              type: string
+              description: Cron-like format for recurring tasks
+            reminder_time:
+              type: string
+              format: date-time
+```
+
+### task.updated
+
+```yaml
+TaskUpdatedEvent:
+  allOf:
+    - $ref: "#/BaseEvent"
+    - type: object
+      properties:
+        event_type:
+          const: "task.updated"
+        payload:
+          type: object
+          required:
+            - task_id
+            - changes
+          properties:
+            task_id:
+              type: string
+              format: uuid
+            changes:
+              type: object
+              properties:
+                title:
+                  type: string
+                  maxLength: 255
+                description:
+                  type: string
+                  maxLength: 5000
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                tags:
+                  type: array
+                  items:
+                    type: string
+                due_date:
+                  type: string
+                  format: date-time
+                recurrence_rule:
+                  type: string
+                reminder_time:
+                  type: string
+                  format: date-time
+            previous_values:
+              type: object
+              description: Same structure as changes
+```
+
+### task.completed
+
+```yaml
+TaskCompletedEvent:
+  allOf:
+    - $ref: "#/BaseEvent"
+    - type: object
+      properties:
+        event_type:
+          const: "task.completed"
+        payload:
+          type: object
+          required:
+            - task_id
+            - completed_at
+          properties:
+            task_id:
+              type: string
+              format: uuid
+            completed_at:
+              type: string
+              format: date-time
+            recurrence_rule:
+              type: string
+              description: If task is recurring, used to create next instance
+```
+
+### task.deleted
+
+```yaml
+TaskDeletedEvent:
+  allOf:
+    - $ref: "#/BaseEvent"
+    - type: object
+      properties:
+        event_type:
+          const: "task.deleted"
+        payload:
+          type: object
+          required:
+            - task_id
+            - deleted_at
+          properties:
+            task_id:
+              type: string
+              format: uuid
+            deleted_at:
+              type: string
+              format: date-time
+```
+
+---
+
+## Reminder Events
+
+### reminder.scheduled
+
+```yaml
+ReminderScheduledEvent:
+  allOf:
+    - $ref: "#/BaseEvent"
+    - type: object
+      properties:
+        event_type:
+          const: "reminder.scheduled"
+        payload:
+          type: object
+          required:
+            - reminder_id
+            - task_id
+            - reminder_time
+            - job_id
+          properties:
+            reminder_id:
+              type: string
+              format: uuid
+            task_id:
+              type: string
+              format: uuid
+            reminder_time:
+              type: string
+              format: date-time
+            job_id:
+              type: string
+              description: Dapr Jobs API job identifier
+```
+
+### reminder.due
+
+```yaml
+ReminderDueEvent:
+  allOf:
+    - $ref: "#/BaseEvent"
+    - type: object
+      properties:
+        event_type:
+          const: "reminder.due"
+        payload:
+          type: object
+          required:
+            - reminder_id
+            - task_id
+            - task_title
+            - reminder_time
+          properties:
+            reminder_id:
+              type: string
+              format: uuid
+            task_id:
+              type: string
+              format: uuid
+            task_title:
+              type: string
+            reminder_time:
+              type: string
+              format: date-time
+```
+
+### reminder.cancelled
+
+```yaml
+ReminderCancelledEvent:
+  allOf:
+    - $ref: "#/BaseEvent"
+    - type: object
+      properties:
+        event_type:
+          const: "reminder.cancelled"
+        payload:
+          type: object
+          required:
+            - reminder_id
+            - task_id
+            - reason
+            - job_id
+          properties:
+            reminder_id:
+              type: string
+              format: uuid
+            task_id:
+              type: string
+              format: uuid
+            reason:
+              type: string
+              enum: [task_completed, task_deleted, manual_cancellation]
+            job_id:
+              type: string
+```
+
+---
+
+## Recurring Task Events
+
+### task.recurrence
+
+```yaml
+TaskRecurrenceEvent:
+  allOf:
+    - $ref: "#/BaseEvent"
+    - type: object
+      properties:
+        event_type:
+          const: "task.recurrence"
+        payload:
+          type: object
+          required:
+            - parent_task_id
+            - recurrence_rule
+            - next_due_date
+            - template
+          properties:
+            parent_task_id:
+              type: string
+              format: uuid
+            recurrence_rule:
+              type: string
+            next_due_date:
+              type: string
+              format: date-time
+            template:
+              type: object
+              required:
+                - title
+                - priority
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                tags:
+                  type: array
+                  items:
+                    type: string
+```
+
+---
+
+## Real-Time Update Events
+
+### task.update
+
+```yaml
+TaskUpdateEvent:
+  allOf:
+    - $ref: "#/BaseEvent"
+    - type: object
+      properties:
+        event_type:
+          const: "task.update"
+        payload:
+          type: object
+          required:
+            - task_id
+            - update_type
+          properties:
+            task_id:
+              type: string
+              format: uuid
+            update_type:
+              type: string
+              enum: [created, updated, completed, deleted]
+            changes:
+              type: object
+              description: Same structure as task.updated changes
+```
+
+---
+
+## Kafka Topic Configuration
+
+### task-events
+
+```yaml
+topic: task-events
+config:
+  partitions: 3
+  replication.factor: 1
+  retention.ms: 604800000  # 7 days
+  cleanup.policy: delete
+  compression.type: snappy
+  min.insync.replicas: 1
+partition.key: user_id
+consumers:
+  - event-processor
+  - audit-service
+  - websocket-service
+```
+
+### reminders
+
+```yaml
+topic: reminders
+config:
+  partitions: 3
+  replication.factor: 1
+  retention.ms: 604800000  # 7 days
+  cleanup.policy: delete
+  compression.type: snappy
+  min.insync.replicas: 1
+partition.key: user_id
+consumers:
+  - notification-service
+```
+
+### task-updates
+
+```yaml
+topic: task-updates
+config:
+  partitions: 3
+  replication.factor: 1
+  retention.ms: 3600000  # 1 hour
+  cleanup.policy: delete
+  compression.type: snappy
+  min.insync.replicas: 1
+partition.key: user_id
+consumers:
+  - websocket-service
+```
+
+---
+
+## Validation Rules
+
+### Event Publishing
+
+1. **Event ID**: MUST be a valid UUID v4
+2. **Event Type**: MUST match pattern `^[a-z]+\.[a-z]+$`
+3. **User ID**: MUST be non-empty string
+4. **Timestamp**: MUST be ISO 8601 format with timezone
+5. **Payload**: MUST conform to event-specific schema
+6. **Partition Key**: MUST be user_id for ordering guarantees
+
+### Event Consumption
+
+1. **Idempotency Check**: MUST check if event_id already processed
+2. **Schema Validation**: MUST validate event against schema before processing
+3. **User Ownership**: MUST validate user_id matches authenticated user
+4. **Error Handling**: MUST implement retry logic with exponential backoff
+5. **Dead Letter Queue**: MUST route failed events after max retries
+
+---
+
+## Versioning Strategy
+
+### Schema Version Format
+
+```
+{major}.{minor}.{patch}
+```
+
+- **Major**: Breaking changes (incompatible schema changes)
+- **Minor**: Backward-compatible additions (new optional fields)
+- **Patch**: Bug fixes (no schema changes)
+
+### Version Migration
+
+When introducing breaking changes:
+1. Publish new schema version
+2. Support both old and new versions for 30 days
+3. Migrate consumers to new version
+4. Deprecate old version after migration period
+
+---
+
+## Testing
+
+### Event Schema Validation Tests
+
+```python
+import pytest
+from pydantic import ValidationError
+
+def test_task_created_event_valid():
+    event_data = {
+        "event_id": "550e8400-e29b-41d4-a716-446655440000",
+        "event_type": "task.created",
+        "user_id": "user_123",
+        "timestamp": "2026-02-14T10:30:00Z",
+        "payload": {
+            "task_id": "660e8400-e29b-41d4-a716-446655440001",
+            "title": "Test task",
+            "priority": "high"
+        },
+        "metadata": {
+            "source": "backend-api",
+            "correlation_id": "770e8400-e29b-41d4-a716-446655440002",
+            "version": "1.0.0"
+        }
+    }
+    event = TaskCreatedEvent(**event_data)
+    assert event.event_type == "task.created"
+
+def test_task_created_event_invalid_priority():
+    event_data = {
+        "event_id": "550e8400-e29b-41d4-a716-446655440000",
+        "event_type": "task.created",
+        "user_id": "user_123",
+        "timestamp": "2026-02-14T10:30:00Z",
+        "payload": {
+            "task_id": "660e8400-e29b-41d4-a716-446655440001",
+            "title": "Test task",
+            "priority": "invalid"  # Invalid priority
+        }
+    }
+    with pytest.raises(ValidationError):
+        TaskCreatedEvent(**event_data)
+```
+
+---
+
+## Summary
+
+This contract defines:
+- ✅ Standardized event schemas for all event types
+- ✅ Kafka topic configurations with partitioning strategy
+- ✅ Validation rules for publishing and consuming events
+- ✅ Versioning strategy for schema evolution
+- ✅ Testing guidelines for schema validation
+
+**Status**: Contract complete and ready for implementation

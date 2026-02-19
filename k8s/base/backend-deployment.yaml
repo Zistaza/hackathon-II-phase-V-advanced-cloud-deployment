@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phase-v-backend
+  namespace: todo-app
+  labels:
+    app: phase-v-backend
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: phase-v-backend
+  template:
+    metadata:
+      labels:
+        app: phase-v-backend
+        version: v1
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "phase-v-backend"
+        dapr.io/app-port: "8000"
+        dapr.io/config: "dapr-config"
+        dapr.io/sidecar-memory-limit: "512Mi"
+        dapr.io/sidecar-cpu-limit: "500m"
+    spec:
+      containers:
+      - name: backend
+        image: phase-v-backend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: connection-string
+              optional: true
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: secret
+              optional: true
+        envFrom:
+        - configMapRef:
+            name: phase-v-config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5

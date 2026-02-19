@@ -1,0 +1,24 @@
+name: Docker Build - Notification Service
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/src/services/**'
+      - '.github/workflows/docker-notification-service.yaml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/src/services/**'
+  release:
+    types: [published]
+
+jobs:
+  build-notification-service:
+    name: Build Notification Service Image
+    uses: ./.github/workflows/reusable-docker-build.yaml
+    with:
+      service-name: notification-service
+      context-path: ./backend
+      dockerfile: ./backend/Dockerfile.notification-service
+      platforms: linux/amd64

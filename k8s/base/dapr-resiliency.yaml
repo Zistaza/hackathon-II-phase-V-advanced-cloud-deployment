@@ -1,0 +1,55 @@
+apiVersion: dapr.io/v1alpha1
+kind: Resiliency
+metadata:
+  name: dapr-resiliency
+  namespace: todo-app
+spec:
+  policies:
+    retries:
+      defaultRetry:
+        policy: constant
+        duration: 1s
+        maxRetries: 3
+      exponentialRetry:
+        policy: exponential
+        initialInterval: 1s
+        randomizationFactor: 0.5
+        multiplier: 2
+        maxInterval: 30s
+        maxRetries: 5
+    circuitBreakers:
+      defaultCircuitBreaker:
+        maxRequests: 1
+        timeout: 30s
+        trip: consecutiveFailures >= 5
+      strictCircuitBreaker:
+        maxRequests: 1
+        timeout: 60s
+        trip: consecutiveFailures >= 3
+    timeouts:
+      defaultTimeout:
+        duration: 30s
+      longTimeout:
+        duration: 120s
+  targets:
+    components:
+      pubsub:
+        outbound:
+          retry: defaultRetry
+          timeout: defaultTimeout
+        inbound:
+          retry: exponentialRetry
+      statestore:
+        outbound:
+          retry: defaultRetry
+          timeout: defaultTimeout
+    operations:
+      pubsub.PublishEvent:
+        retry: defaultRetry
+        timeout: defaultTimeout
+      state.Get:
+        retry: defaultRetry
+        timeout: defaultTimeout
+      state.Save:
+        retry: defaultRetry
+        timeout: defaultTimeout

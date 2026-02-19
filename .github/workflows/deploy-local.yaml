@@ -1,0 +1,166 @@
+name: Deploy - Minikube (Local)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'local'
+        type: choice
+        options:
+          - local
+      version:
+        description: 'Version to deploy (tag, branch, or commit SHA)'
+        required: false
+        default: 'main'
+        type: string
+  push:
+    branches: [develop]
+    paths:
+      - 'k8s/**'
+      - 'scripts/**'
+
+env:
+  REGISTRY: ghcr.io
+  NAMESPACE: todo-app
+
+jobs:
+  deploy-local:
+    name: Deploy to Minikube
+    runs-on: ubuntu-latest
+    environment: local
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Minikube
+        uses: manusa/actions-setup-minikube@v2
+        with:
+          minikube version: 'v1.32.0'
+          kubernetes version: 'v1.28.0'
+          driver: 'docker'
+          start args: '--cpus=4 --memory=8192'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and load images locally
+        run: |
+          # Build backend image
+          docker build -t ${{ env.REGISTRY }}/${{ github.repository }}/backend:local \
+            -t ${{ env.REGISTRY }}/${{ github.repository }}/backend:${{ github.sha }} \
+            ./backend
+          
+          # Build frontend image
+          docker build -t ${{ env.REGISTRY }}/${{ github.repository }}/frontend:local \
+            -t ${{ env.REGISTRY }}/${{ github.repository }}/frontend:${{ github.sha }} \
+            ./frontend
+          
+          # Load images into Minikube
+          minikube image load ${{ env.REGISTRY }}/${{ github.repository }}/backend:local
+          minikube image load ${{ env.REGISTRY }}/${{ github.repository }}/frontend:local
+          minikube image load ${{ env.REGISTRY }}/${{ github.repository }}/backend:${{ github.sha }}
+          minikube image load ${{ env.REGISTRY }}/${{ github.repository }}/frontend:${{ github.sha }}
+
+      - name: Install Dapr
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/dapr/cli/master/install/install.sh | bash
+          dapr init -k --wait
+
+      - name: Deploy Redis
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo update
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+          helm install redis bitnami/redis \
+            --namespace ${{ env.NAMESPACE }} \
+            --set auth.password=redis-password \
+            --set master.persistence.enabled=false \
+            --set replica.replicaCount=0 \
+            --wait
+
+      - name: Create secrets
+        run: |
+          kubectl create secret generic neon-secret \
+            --from-literal=connectionString="postgresql://user:password@localhost:5432/testdb" \
+            --namespace ${{ env.NAMESPACE }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+          
+          kubectl create secret generic jwt-secret \
+            --from-literal=secret="local-jwt-secret" \
+            --namespace ${{ env.NAMESPACE }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+          
+          kubectl create secret generic redis-secret \
+            --from-literal=password="redis-password" \
+            --namespace ${{ env.NAMESPACE }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy Dapr components
+        run: |
+          kubectl apply -f k8s/local/dapr-components/
+
+      - name: Deploy application
+        run: |
+          kubectl apply -f k8s/base/
+          kubectl apply -f k8s/local/
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment --all -n ${{ env.NAMESPACE }} --timeout=300s
+
+      - name: Run health checks
+        run: |
+          # Wait for pods to be ready
+          kubectl wait --for=condition=ready pod --all -n ${{ env.NAMESPACE }} --timeout=300s
+          
+          # Check Dapr sidecars
+          SIDECAR_COUNT=$(kubectl get pods -n ${{ env.NAMESPACE }} -o json | \
+            jq '[.items[].status.containerStatuses | length] | add')
+          POD_COUNT=$(kubectl get pods -n ${{ env.NAMESPACE }} -o json | \
+            jq '.items | length')
+          
+          echo "Containers: $SIDECAR_COUNT, Pods: $POD_COUNT"
+          
+          if [ "$SIDECAR_COUNT" -lt "$((POD_COUNT * 2))" ]; then
+            echo "⚠️ Some pods may not have Dapr sidecars injected"
+          else
+            echo "✅ All pods have Dapr sidecars"
+          fi
+          
+          # Test health endpoint
+          kubectl port-forward -n ${{ env.NAMESPACE }} svc/phase-v-backend 8000:8000 &
+          sleep 5
+          curl -f http://localhost:8000/health || exit 1
+
+      - name: Get deployment status
+        run: |
+          echo "=== Deployment Status ==="
+          kubectl get pods -n ${{ env.NAMESPACE }}
+          kubectl get deployments -n ${{ env.NAMESPACE }}
+          kubectl get ingress -n ${{ env.NAMESPACE }}
+          dapr status -k
+
+      - name: Notify success
+        if: success()
+        run: |
+          echo "✅ Deployment to Minikube completed successfully!"
+          echo "Access the application at: http://todo-app.local"
+          echo "Minikube IP: $(minikube ip)"
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          echo "❌ Deployment to Minikube failed!"
+          echo "Debug information:"
+          kubectl get events -n ${{ env.NAMESPACE }} --sort-by='.lastTimestamp'
+          kubectl logs -n ${{ env.NAMESPACE }} -l app=phase-v-backend --tail=50

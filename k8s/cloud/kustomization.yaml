@@ -1,0 +1,178 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Namespace for all resources
+namespace: todo-app
+
+# Resources to include in cloud deployment
+resources:
+  - ../base
+  - ./ingress.yaml
+  - ./cert-manager-issuer.yaml
+
+# Dapr components are applied separately via kubectl apply
+# to ensure they exist before deployments start
+
+# ConfigMap patches for cloud environment
+configMapGenerator:
+  - name: app-config
+    behavior: merge
+    literals:
+      - ENVIRONMENT=cloud
+      - DAPR_HTTP_ENDPOINT=http://localhost:3500
+      - REDPANDA_ENABLED=true
+      - LOG_LEVEL=info
+      - CLOUD_PROVIDER=oracle
+
+# Secret references (secrets must be created manually)
+secretGenerator: []
+
+# Patches for cloud-specific configurations
+patches:
+  # Resource limits optimized for Oracle Cloud Always Free (2 OCPU, 12GB RAM)
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: backend
+
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: event-processor
+
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+    target:
+      kind: Deployment
+      name: frontend
+
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+    target:
+      kind: Deployment
+      name: websocket-service
+
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+    target:
+      kind: Deployment
+      name: reminder-scheduler
+
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+    target:
+      kind: Deployment
+      name: notification-service
+
+  # Resource requests/limits for cloud
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "100m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "256Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "500m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "512Mi"
+    target:
+      kind: Deployment
+      name: backend
+
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "100m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "256Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "500m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "512Mi"
+    target:
+      kind: Deployment
+      name: event-processor
+
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "50m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "128Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "250m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "256Mi"
+    target:
+      kind: Deployment
+      name: reminder-scheduler
+
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "50m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "128Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "250m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "256Mi"
+    target:
+      kind: Deployment
+      name: notification-service
+
+# Images to use (update with your registry)
+images:
+  - name: phase-v-backend
+    newName: your-registry/phase-v-backend
+    newTag: latest
+  - name: phase-v-frontend
+    newName: your-registry/phase-v-frontend
+    newTag: latest
+  - name: phase-v-event-processor
+    newName: your-registry/phase-v-event-processor
+    newTag: latest
+  - name: phase-v-reminder-scheduler
+    newName: your-registry/phase-v-reminder-scheduler
+    newTag: latest
+  - name: phase-v-notification-service
+    newName: your-registry/phase-v-notification-service
+    newTag: latest
+  - name: phase-v-websocket-service
+    newName: your-registry/phase-v-websocket-service
+    newTag: latest
+
+# Labels to apply to all resources
+commonLabels:
+  environment: cloud
+  app.kubernetes.io/part-of: phase-v
+  app.kubernetes.io/managed-by: kustomize
+
+# Annotations for Dapr sidecar configuration
+# These are already set in the base deployments

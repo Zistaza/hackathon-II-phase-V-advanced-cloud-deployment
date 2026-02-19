@@ -267,6 +267,8 @@ See `.specify/memory/constitution.md` for code quality, testing, performance, se
 - Python 3.11, JavaScript/TypeScript 5.0+ + Docker AI (Gordon), kubectl-ai, Kagent, Helm 3, Minikube (011-k8s-deployment)
 - Python 3.11, JavaScript/TypeScript 5.0+ + FastAPI, SQLModel, Pydantic, Dapr SDK, OpenAI Agents SDK, Official MCP SDK, Better Auth, OpenAI ChatKit (012-phasev-advanced-features)
 - Neon Serverless PostgreSQL with full-text search indexes (GIN), JSONB for tags, composite indexes for filtering (012-phasev-advanced-features)
+- Python 3.11 (backend), TypeScript 5.0+ (frontend), Bash (deployment scripts) (013-phasev-infra-deployment)
+- Neon Serverless PostgreSQL (primary), Dapr State Store (event processing state), Kafka (event streams) (013-phasev-infra-deployment)
 
 ## Recent Changes
 - 001-auth-identity: Added Python 3.11, JavaScript/TypeScript, Next.js 16+ + Better Auth (frontend), FastAPI (backend), SQLModel (ORM), Neon Serverless PostgreSQL (database)

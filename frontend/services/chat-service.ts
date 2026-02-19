@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { getCookie } from '../lib/cookies';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001/api';
 
 const chatInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -14,7 +14,8 @@ const chatInstance = axios.create({
 // Request interceptor to attach JWT token to all chat API requests
 chatInstance.interceptors.request.use(
   (config) => {
-    const token = getCookie('authToken') || localStorage.getItem('authToken');
+    const token = getCookie('authToken') ||
+      (typeof window !== 'undefined' ? localStorage.getItem('authToken') : null);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -30,12 +31,14 @@ chatInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 || error.response?.status === 403) {
-      // Clear stored tokens and redirect to login
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userData');
-      document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'userData=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      window.location.href = '/login';
+      // Clear stored tokens and redirect to login (only in browser)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+        document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'userData=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
